@@ -1,0 +1,76 @@
+ body {
+        font-family: "sofiapro-semibold",PingFangSC,sans-serif;
+        margin: 0;
+        padding: 0;
+    }
+    a {
+        text-decoration: none;
+        color: #000;
+    }
+    a:hover {
+        text-decoration: none;
+        color: #000;
+    }
+    .container {
+        width: 375px;
+        margin: 0 auto;
+    }
+    .videoPost {
+        position: relative;
+    }
+    .profileImgInText img {
+        width: 40px;
+        border-radius: 25px;
+    }
+     .reactonSide {
+        position: absolute;
+        bottom: 0;
+        display: inline-grid;
+        color: #fff;
+        text-align: center;
+        /* margin: 195px 15px 0 0; */
+        float: right;
+        right: 15px;
+        top: 260px;
+        height: 230px;
+        display: none;
+    }
+    .videoContent {
+        font-size: 15px;
+        font-weight: 400;
+        position: relative;
+        width: 70%;
+        color: white;
+        left: 10px;
+        margin-top: -150px;
+        z-index: 9999;
+    }
+    .reactonSide {
+        color: #fff;
+    }
+    .reactonSide a {
+        margin: 0 0 18px 0;
+        color: #fff;
+    }
+    .reactonSide a .fas, .reactonSide a .fa {
+        font-size: 25px;
+    }
+    .titleName {
+        margin: 9px 0;
+    }
+    .videoContent h5 {
+        margin: 0;
+    }
+    .videoContent h6 {
+        margin: 6px 0;
+    }
+    .opratingBar img {
+        width: 30px;
+        margin: 0 10px;
+    }
+    .opratingBar {
+        position: absolute;
+        margin: 45px 0 0 0;
+        background: #000;
+        padding: 8px 3px;
+    }
