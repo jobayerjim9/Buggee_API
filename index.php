@@ -8,10 +8,32 @@ if (isset($_GET["p"])) {
         gifupload();
     } else if ($_GET["p"] == "signupemail") {
         signupemail();
-    }else if ($_GET["p"] == "usernameexist") {
+    } else if ($_GET["p"] == "usernameexist") {
         checkeusernamexist();
+    } else if ($_GET["p"] == "loginphone") {
+        loginphone();
+    } else if ($_GET["p"] == "createLive") {
+        createLive();
+    } else if ($_GET["p"] == "getAllLive") {
+        getAllLive();
+    } else if ($_GET["p"] == "deleteLive") {
+        deleteLive();
+    } else if ($_GET["p"] == "checkphoneexist") {
+        checkphoneexist();
     } else if ($_GET["p"] == "loginemail") {
         loginemail();
+    } else if ($_GET["p"] == "changeAccountType") {
+        updateAccountPrivacy();
+    } else if ($_GET["p"] == "messagePrivacy") {
+        updateMessagePrivacy();
+    } else if ($_GET["p"] == "commentPrivacy") {
+        updateCommentPrivacy();
+    } else if ($_GET["p"] == "livePrivacy") {
+        updateLivePrivacy();
+    } else if ($_GET["p"] == "getPrivacy") {
+        getPrivacy();
+    } else if ($_GET["p"] == "loginusername") {
+        loginusername();
     } else if ($_GET["p"] == "userexist") {
         checkexist();
     } else if ($_GET["p"] == "signup") {
@@ -42,8 +64,14 @@ if (isset($_GET["p"])) {
         edit_profile();
     } else if ($_GET["p"] == "follow_users") {
         follow_users();
+    } else if ($_GET["p"] == "sentFollowRequest") {
+        sentFollowRequest();
+    } else if ($_GET["p"] == "checkFriend") {
+        checkFollow();
     } else if ($_GET["p"] == "get_user_data") {
         get_user_data();
+    } else if ($_GET["p"] == "updateBio") {
+        updateBio();
     } else if ($_GET["p"] == "get_followers") {
         get_followers();
     } else if ($_GET["p"] == "get_followings") {
@@ -64,6 +92,16 @@ if (isset($_GET["p"])) {
         getNotifications();
     } else if ($_GET["p"] == "search") {
         search();
+    } else if ($_GET["p"] == "createPage") {
+        createPage();
+    } else if ($_GET["p"] == "getPageInfo") {
+        getPageInfo();
+    } else if ($_GET["p"] == "updatePageName") {
+        updatePageName();
+    } else if ($_GET["p"] == "updatePageDesc") {
+        updatePageDesc();
+    } else if ($_GET["p"] == "updatePagePic") {
+        updatePagePic();
     } //admin panel functions
     else if ($_GET["p"] == "Admin_Login") {
         Admin_Login();
@@ -99,6 +137,12 @@ if (isset($_GET["p"])) {
         add_discovery_Section();
     } else if ($_GET["p"] == "delete_discovery_Section") {
         delete_discovery_Section();
+    } else if ($_GET["p"] == "allProfileVerification") {
+        allProfileVerification();
+    } else if ($_GET["p"] == "updateVerificationStatus") {
+        updateVerificationStatus();
+    } else if ($_GET["p"] == "getVerified") {
+        getVerified();
     }
 
 
@@ -107,6 +151,219 @@ if (isset($_GET["p"])) {
 
 }
 
+function getAllLive()
+{
+    require_once("config.php");
+
+    $sql = "SELECT * FROM live_video";
+    $result = mysqli_query($conn, $sql);
+    $array_out = array();
+    while ($row = mysqli_fetch_array($result)) {
+        $id = $row["live_id"];
+        $user_sql = "SELECT * FROM users WHERE  fb_id='$id'";
+        $user_result = mysqli_query($conn, $user_sql);
+        $user = mysqli_fetch_object($user_result);
+        $array_out[] = array(
+            "video_info" => array(
+                "live_id" => $row["live_id"],
+                "live_name" => $row["live_name"],
+                "live_details" => $row["live_details"],
+                "thumbnail" => $row["thumbnail"]
+            ),
+            "user_info" => array(
+                "fb_id" => $user->fb_id,
+                "username" => $user->username,
+                "first_name" => $user->first_name,
+                "last_name" => $user->last_name,
+                "profile_pic" => $user->profile_pic,
+                "block" => $user->block,
+                "account_type" => $user->account_type,
+                "message_privacy" => $user->message_privacy,
+                "comment_privacy" => $user->comment_privacy,
+                "verified" => $user->verified,
+                "live_privacy" => $user->live_privacy
+            )
+        );
+    }
+    $output = array("code" => "200", "msg" => $array_out);
+    print_r(json_encode($output, true));
+
+
+}
+function updatePageName()
+{
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+    $id = $event_json["id"];
+    $name = $event_json["name"];
+    $sql = "UPDATE `pages` SET name='$name' WHERE owner_id='$id'";
+    if (mysqli_query($conn, $sql)){
+        $response["success"]=true;
+    }
+    else{
+        $response["success"]=false;
+    }
+    print_r(json_encode($response, true));
+
+
+}
+
+function updatePageDesc()
+{
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+    $id = $event_json["id"];
+    $desc = $event_json["desc"];
+    $sql = "UPDATE `pages` SET description='$desc' WHERE owner_id='$id'";
+    if (mysqli_query($conn, $sql)){
+        $response["success"]=true;
+    }
+    else{
+        $response["success"]=false;
+    }
+    print_r(json_encode($response, true));
+
+
+}
+function updatePagePic()
+{
+
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+    $id = $event_json["id"];
+    $pic_base64 = $event_json["pic"];
+    $fileName = time() . "_" . rand();
+    $pic_url = "upload/profile_pic/" . $fileName . ".jpeg";
+    $pic = base64_decode($pic_base64);
+    file_put_contents($pic_url,$pic);
+    $sql = "UPDATE `pages` SET profile_pic='$pic_url' WHERE owner_id='$id'";
+    if (mysqli_query($conn, $sql)){
+        $response["success"]=true;
+    }
+    else{
+        $response["success"]=false;
+    }
+    print_r(json_encode($response, true));
+
+
+}
+function getPageInfo()
+{
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+    $id = $event_json["id"];
+    $sql = "SELECT * FROM pages WHERE owner_id='$id' LIMIT 1";
+    $result = mysqli_query($conn, $sql);
+    if (mysqli_num_rows($result)>0){
+        $data=mysqli_fetch_object($result);
+        $response["success"]=true;
+        $response["profile_pic"]=$data->profile_pic;
+        $response["name"]=$data->name;
+        $response["description"]=$data->description;
+    }
+    else{
+        $response["success"]=false;
+    }
+    print_r(json_encode($response, true));
+
+
+}
+function deleteLive()
+{
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+    $id = $event_json["id"];
+//    checkTokon();
+    if (isset($id)) {
+        $sql = "DELETE FROM `live_video` WHERE live_id='$id'";
+        if (mysqli_query($conn, $sql)) {
+            $response["success"] = true;
+        } else {
+            $response["success"] = false;
+        }
+        print_r(json_encode($response, true));
+    }
+}
+
+function createLive()
+{
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+//    checkTokon();
+    $name = $event_json["name"];
+    $id = $event_json["id"];
+    $live_details = $event_json["live_details"];
+    $status = $event_json["status"];
+    if (isset($name) && isset($id)) {
+        $sql = "INSERT INTO live_video (live_id, live_name, live_details, status) VALUES ('$id','$name', '$live_details', '$status')";
+        if (mysqli_query($conn, $sql)) {
+            $response["success"] = true;
+        } else {
+            $response["success"] = false;
+        }
+        print_r(json_encode($response, true));
+    }
+
+
+}
+function createPage()
+{
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+//    checkTokon();
+    $name = $event_json["name"];
+    $id = $event_json["id"];
+    $profile_pic = $event_json["profile_pic"];
+    if (isset($name) && isset($id) && isset($profile_pic)) {
+        $fileName = time() . "_" . rand();
+        $pic_url = "upload/profile_pic/" . $fileName . ".jpeg";
+        $pic = base64_decode($profile_pic);
+        file_put_contents($pic_url,$pic);
+        $sql = "INSERT INTO pages(owner_id, profile_pic, name) VALUES ('$id','$pic_url','$name')";
+        if (mysqli_query($conn, $sql)) {
+            $user_update="UPDATE users SET page_have=1 WHERE fb_id='$id'";
+            if (mysqli_query($conn, $user_update))
+            {
+                $response["success"] = true;
+            }
+            else {
+                $response["success"] = false;
+            }
+        } else {
+            $response["success"] = false;
+        }
+        print_r(json_encode($response, true));
+    }
+
+
+}
+function updateBio()
+{
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+//    checkTokon();
+    $id = $event_json["id"];
+    $bio = $event_json["bio"];
+    if (isset($bio) && isset($id)) {
+        $sql = "UPDATE `users` SET bio='$bio' WHERE fb_id='$id'";
+        if (mysqli_query($conn, $sql)) {
+            $response["success"] = true;
+        } else {
+            $response["success"] = false;
+        }
+        print_r(json_encode($response, true));
+    }
+
+
+}
 function sendPushNotificationToMobileDevice($data)
 {
     require_once("config.php");
@@ -163,57 +420,341 @@ function checkexist()
     $input = @file_get_contents("php://input");
     $event_json = json_decode($input, true);
     $id = $event_json['id'];
-    $sql="SELECT * FROM `users` WHERE fb_id='$id'";
-    $result= mysqli_query($conn,$sql);
-    if (mysqli_num_rows($result)>0) {
-        $response["success"]=true;
+    $sql = "SELECT * FROM `users` WHERE fb_id='$id'";
+    $result = mysqli_query($conn, $sql);
+    if (mysqli_num_rows($result) > 0) {
+        $response["success"] = true;
+    } else {
+        $response["success"] = false;
     }
-    else {
-        $response["success"]=false;
-    }
-    print_r(json_encode($response,true));
-
+    print_r(json_encode($response, true));
 
 
 }
+
+function updateMessagePrivacy()
+{
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+    $id = $event_json['id'];
+    $privacy = $event_json["privacy"];
+    $sql = "UPDATE users SET message_privacy='$privacy' WHERE fb_id='$id'";
+    $result = mysqli_query($conn, $sql);
+    if ($result) {
+        $response["success"] = true;
+    } else {
+        $response["success"] = false;
+    }
+    print_r(json_encode($response, true));
+}
+
+function updateCommentPrivacy()
+{
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+    $id = $event_json['id'];
+    $privacy = $event_json["privacy"];
+    $sql = "UPDATE users SET comment_privacy='$privacy' WHERE fb_id='$id'";
+    $result = mysqli_query($conn, $sql);
+    if ($result) {
+        $response["success"] = true;
+    } else {
+        $response["success"] = false;
+    }
+    print_r(json_encode($response, true));
+}
+
+function updateLivePrivacy()
+{
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+    $id = $event_json['id'];
+    $privacy = $event_json["privacy"];
+    $sql = "UPDATE users SET live_privacy='$privacy' WHERE fb_id='$id'";
+    $result = mysqli_query($conn, $sql);
+    if ($result) {
+        $response["success"] = true;
+    } else {
+        $response["success"] = false;
+    }
+    print_r(json_encode($response, true));
+}
+
+function updateAccountPrivacy()
+{
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+    $id = $event_json['id'];
+    $privacy = $event_json["privacy"];
+    $sql = "UPDATE users SET account_type='$privacy' WHERE fb_id='$id'";
+    $result = mysqli_query($conn, $sql);
+    if ($result) {
+        $response["success"] = true;
+    } else {
+        $response["success"] = false;
+    }
+    print_r(json_encode($response, true));
+}
+
 function checkeusernamexist()
 {
     require_once("config.php");
     $input = @file_get_contents("php://input");
     $event_json = json_decode($input, true);
     $username = $event_json['username'];
-    $sql="SELECT * FROM `users` WHERE username='$username'";
-    $result= mysqli_query($conn,$sql);
-    if (mysqli_num_rows($result)>0) {
-        $response["success"]=true;
+    $sql = "SELECT * FROM `users` WHERE username='$username'";
+    $result = mysqli_query($conn, $sql);
+    if (mysqli_num_rows($result) > 0) {
+        $response["success"] = true;
+    } else {
+        $response["success"] = false;
     }
-    else {
-        $response["success"]=false;
-    }
-    print_r(json_encode($response,true));
-
+    print_r(json_encode($response, true));
 
 
 }
-function loginemail() {
+
+function checkphoneexist()
+{
     require_once("config.php");
     $input = @file_get_contents("php://input");
     $event_json = json_decode($input, true);
-    $email=$event_json["email"];
-    $password=$event_json["password"];
+    $phone = $event_json['phone'];
+    $sql = "SELECT * FROM `users` WHERE fb_id='$phone'";
+    $result = mysqli_query($conn, $sql);
+    if (mysqli_num_rows($result) > 0) {
+        $response["success"] = true;
+    } else {
+        $response["success"] = false;
+    }
+    print_r(json_encode($response, true));
+
+
+}
+
+function getPrivacy()
+{
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+    $id = $event_json['id'];
+    $sql = "SELECT * FROM users WHERE fb_id='$id'";
+    $login_rs = mysqli_query($conn, $sql);
+    $rd = mysqli_fetch_object($login_rs);
+    $response["account_type"] = $rd->account_type;
+    $response["message_privacy"] = $rd->message_privacy;
+    $response["comment_privacy"] = $rd->comment_privacy;
+    $response["live_privacy"] = $rd->live_privacy;
+    print_r(json_encode($response, true));
+
+
+}
+
+function loginemail()
+{
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+    $email = $event_json["email"];
+    $password = $event_json["password"];
+    $headers = apache_request_headers();
+    $tokon = null;
+    $header_device = $headers['Device'];
+    $header_version = $headers['Version'];
+    $header_tokon = $headers['Tokon'];
+    $header_deviceid = $headers['Deviceid'];
+    $sql = "SELECT * FROM `users` WHERE fb_id='$email' && password='$password'";
+    $login_rs = mysqli_query($conn, $sql);
+    $get_device_tkon = "select * from device_tokon where fb_id='" . $email . "' and phone_id='" . $header_deviceid . "' ";
+    $get_device_tkon1 = mysqli_query($conn, $get_device_tkon);
+    if (mysqli_num_rows($get_device_tkon1) > 0) {
+        $dvice_tokon = mysqli_fetch_object($get_device_tkon1);
+        $tokon = $dvice_tokon->tokon;
+    } else {
+        $tokon_check_sql = "select * from device_tokon where fb_id= '$email'";
+        $tokon_check_result = mysqli_query($conn, $tokon_check_sql);
+        if (mysqli_num_rows($tokon_check_result) > 0) {
+            $update_tokon_sql = "UPDATE device_tokon SET phone_id='$header_deviceid' WHERE fb_id='$email'";
+            $update_tokon_result = mysqli_query($conn, $update_tokon_sql);
+            $get_device_tkon = "select * from device_tokon where fb_id='" . $email . "' and phone_id='" . $header_deviceid . "' ";
+            $get_device_tkon1 = mysqli_query($conn, $get_device_tkon);
+            $dvice_tokon = mysqli_fetch_object($get_device_tkon1);
+            $tokon = $dvice_tokon->tokon;
+        } else {
+            $tokon = time() . rand();
+            $qrry_1 = "insert into device_tokon(fb_id,tokon,phone_id)values(";
+            $qrry_1 .= "'" . $email . "',";
+            $qrry_1 .= "'" . $tokon . "',";
+            $qrry_1 .= "'" . $header_deviceid . "'";
+            $qrry_1 .= ")";
+            mysqli_query($conn, $qrry_1);
+        }
+    }
+    if (mysqli_num_rows($login_rs)) {
+        $rd = mysqli_fetch_object($login_rs);
+
+        if ($rd->block == '0') {
+            $array_out = array();
+            $array_out[] =
+                //array("code" => "200");
+                array(
+                    "fb_id" => $rd->fb_id,
+                    "action" => "login",
+                    "account_type" => $rd->account_type,
+                    "message_privacy" => $rd->message_privacy,
+                    "comment_privacy" => $rd->comment_privacy,
+                    "live_privacy" => $rd->live_privacy,
+                    "profile_pic" => $rd->profile_pic,
+                    "first_name" => $rd->first_name,
+                    "last_name" => $rd->last_name,
+                    "username" => $rd->username,
+                    "bio" => $rd->bio,
+                    "page_have" => $rd->page_have,
+                    "gender" => $rd->gender,
+                    "tokon" => $tokon
+                );
+
+            $output = array("code" => "200", "msg" => $array_out);
+            print_r(json_encode($output, true));
+        } else {
+            $array_out = "error in login";
+            $output = array("code" => "201", "msg" => $array_out);
+            print_r(json_encode($output, true));
+        }
+    } else {
+        $array_out = "Username & Password Not Found";
+        $output = array("code" => "201", "msg" => $array_out);
+        print_r(json_encode($output, true));
+    }
+
+}
+
+function loginusername()
+{
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+    $username = $event_json["username"];
+    $password = $event_json["password"];
     $headers = apache_request_headers();
 
     $header_device = $headers['Device'];
     $header_version = $headers['Version'];
     $header_tokon = $headers['Tokon'];
     $header_deviceid = $headers['Deviceid'];
-    $sql="SELECT * FROM `users` WHERE fb_id='$email' && password='$password'";
-    $login_rs=mysqli_query($conn,$sql);
+    $sql = "SELECT * FROM `users` WHERE username='$username' && password='$password'";
+    $login_rs = mysqli_query($conn, $sql);
     $get_device_tkon = "select * from device_tokon where fb_id='" . $email . "' and phone_id='" . $header_deviceid . "' ";
     $get_device_tkon1 = mysqli_query($conn, $get_device_tkon);
     $dvice_tokon = mysqli_fetch_object($get_device_tkon1);
-    if (mysqli_num_rows($login_rs))
-    {
+    $tokon = null;
+
+    if (mysqli_num_rows($login_rs)) {
+        $rd = mysqli_fetch_object($login_rs);
+        if (mysqli_num_rows($get_device_tkon1) > 0) {
+            $dvice_tokon = mysqli_fetch_object($get_device_tkon1);
+            $tokon = $dvice_tokon->tokon;
+        } else {
+            $tokon_check_sql = "select * from device_tokon where fb_id= '$rd->fb_id'";
+            $tokon_check_result = mysqli_query($conn, $tokon_check_sql);
+            if (mysqli_num_rows($tokon_check_result) > 0) {
+                $update_tokon_sql = "UPDATE device_tokon SET phone_id='$header_deviceid' WHERE fb_id='$rd->fb_id'";
+                $update_tokon_result = mysqli_query($conn, $update_tokon_sql);
+                $get_device_tkon = "select * from device_tokon where fb_id='" . $email . "' and phone_id='" . $header_deviceid . "' ";
+                $get_device_tkon1 = mysqli_query($conn, $get_device_tkon);
+                $dvice_tokon = mysqli_fetch_object($get_device_tkon1);
+                $tokon = $dvice_tokon->tokon;
+            } else {
+                $tokon = time() . rand();
+                $qrry_1 = "insert into device_tokon(fb_id,tokon,phone_id)values(";
+                $qrry_1 .= "'" . $rd->fb_id . "',";
+                $qrry_1 .= "'" . $tokon . "',";
+                $qrry_1 .= "'" . $header_deviceid . "'";
+                $qrry_1 .= ")";
+                mysqli_query($conn, $qrry_1);
+            }
+        }
+        if ($rd->block == '0') {
+            $array_out = array();
+            $array_out[] =
+                //array("code" => "200");
+                array(
+                    "fb_id" => $rd->fb_id,
+                    "action" => "login",
+                    "account_type" => $rd->account_type,
+                    "message_privacy" => $rd->message_privacy,
+                    "comment_privacy" => $rd->comment_privacy,
+                    "live_privacy" => $rd->live_privacy,
+                    "profile_pic" => $rd->profile_pic,
+                    "first_name" => $rd->first_name,
+                    "last_name" => $rd->last_name,
+                    "username" => $rd->username,
+                    "bio" => $rd->bio,
+                    "page_have" => $rd->page_have,
+                    "gender" => $rd->gender,
+                    "tokon" => $tokon
+                );
+
+            $output = array("code" => "200", "msg" => $array_out);
+            print_r(json_encode($output, true));
+        } else {
+            $array_out = "error in login";
+            $output = array("code" => "201", "msg" => $array_out);
+            print_r(json_encode($output, true));
+        }
+    } else {
+        $array_out = "Username & Password Not Found";
+        $output = array("code" => "201", "msg" => $array_out);
+        print_r(json_encode($output, true));
+    }
+
+}
+
+function loginphone()
+{
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+    $phone_number = $event_json["phone"];
+    $headers = apache_request_headers();
+    $header_device = $headers['Device'];
+    $header_version = $headers['Version'];
+    $header_tokon = $headers['Tokon'];
+    $header_deviceid = $headers['Deviceid'];
+    $sql = "SELECT * FROM `users` WHERE fb_id='$phone_number'";
+    $login_rs = mysqli_query($conn, $sql);
+    $get_device_tkon = "select * from device_tokon where fb_id='" . $phone_number . "' and phone_id='" . $header_deviceid . "' ";
+    $get_device_tkon1 = mysqli_query($conn, $get_device_tkon);
+    $tokon = null;
+    if (mysqli_num_rows($get_device_tkon1) > 0) {
+        $dvice_tokon = mysqli_fetch_object($get_device_tkon1);
+        $tokon = $dvice_tokon->tokon;
+    } else {
+        $tokon_check_sql = "select * from device_tokon where fb_id= '$phone_number'";
+        $tokon_check_result = mysqli_query($conn, $tokon_check_sql);
+        if (mysqli_num_rows($tokon_check_result) > 0) {
+            $update_tokon_sql = "UPDATE device_tokon SET phone_id='$header_deviceid' WHERE fb_id='$phone_number'";
+            $update_tokon_result = mysqli_query($conn, $update_tokon_sql);
+            $get_device_tkon = "select * from device_tokon where fb_id='" . $email . "' and phone_id='" . $header_deviceid . "' ";
+            $get_device_tkon1 = mysqli_query($conn, $get_device_tkon);
+            $dvice_tokon = mysqli_fetch_object($get_device_tkon1);
+            $tokon = $dvice_tokon->tokon;
+        } else {
+            $tokon = time() . rand();
+            $qrry_1 = "insert into device_tokon(fb_id,tokon,phone_id)values(";
+            $qrry_1 .= "'" . $phone_number . "',";
+            $qrry_1 .= "'" . $tokon . "',";
+            $qrry_1 .= "'" . $header_deviceid . "'";
+            $qrry_1 .= ")";
+            mysqli_query($conn, $qrry_1);
+        }
+    }
+
+    if (mysqli_num_rows($login_rs)) {
         $rd = mysqli_fetch_object($login_rs);
 
         if ($rd->block == '0') {
@@ -226,10 +767,16 @@ function loginemail() {
                     "profile_pic" => $rd->profile_pic,
                     "first_name" => $rd->first_name,
                     "last_name" => $rd->last_name,
+                    "account_type" => $rd->account_type,
+                    "message_privacy" => $rd->message_privacy,
+                    "comment_privacy" => $rd->comment_privacy,
+                    "live_privacy" => $rd->live_privacy,
                     "username" => $rd->username,
                     "bio" => $rd->bio,
+                    "page_have" => $rd->page_have,
+
                     "gender" => $rd->gender,
-                    "tokon" => $dvice_tokon->tokon
+                    "tokon" => $tokon
                 );
 
             $output = array("code" => "200", "msg" => $array_out);
@@ -239,6 +786,10 @@ function loginemail() {
             $output = array("code" => "201", "msg" => $array_out);
             print_r(json_encode($output, true));
         }
+    } else {
+        $array_out = "Username & Password Not Found";
+        $output = array("code" => "201", "msg" => $array_out);
+        print_r(json_encode($output, true));
     }
 
 }
@@ -405,6 +956,7 @@ function signup()
                         "last_name" => $rd->last_name,
                         "username" => $rd->username,
                         "bio" => $rd->bio,
+                        "page_have" => $rd->page_have,
                         "gender" => $rd->gender,
                         "tokon" => $dvice_tokon->tokon
                     );
@@ -580,6 +1132,8 @@ function uploadVideo()
         $fb_id = htmlspecialchars(strip_tags($event_json['fb_id'], ENT_QUOTES));
         $description = htmlspecialchars(strip_tags($event_json['description'], ENT_QUOTES));
         $sound_id = htmlspecialchars(strip_tags($event_json['sound_id'], ENT_QUOTES));
+        $uploadFrom = htmlspecialchars(strip_tags($event_json['uploadFrom'], ENT_QUOTES));
+        $url = htmlspecialchars(strip_tags($event_json['url'], ENT_QUOTES));
         $thum = $event_json['picbase64']['file_data'];
         $video = $event_json['videobase64']['file_data'];
         $gif = $event_json['gifbase64']['file_data'];
@@ -676,13 +1230,15 @@ function uploadVideo()
             }
 
 
-        $qrry_1 = "insert into videos(description,video,sound_id,fb_id,gif,thum)values(";
+        $qrry_1 = "insert into videos(description,video,sound_id,fb_id,gif,thum,upload_from,url)values(";
         $qrry_1 .= "'" . $description . "',";
         $qrry_1 .= "'" . $video_url . "',";
         $qrry_1 .= "'" . $sound_id . "',";
         $qrry_1 .= "'" . $fb_id . "',";
         $qrry_1 .= "'" . $gif_url . "',";
-        $qrry_1 .= "'" . $thum_url . "'";
+        $qrry_1 .= "'" . $thum_url . "',";
+        $qrry_1 .= "'" . $uploadFrom . "',";
+        $qrry_1 .= "'" . $url . "'";
         $qrry_1 .= ")";
         if (mysqli_query($conn, $qrry_1)) {
             $array_out = array();
@@ -697,13 +1253,12 @@ function uploadVideo()
             $array_out = array();
             $array_out[] =
                 array(
-                    "response" => "error in uploading files"
+                    "response" => "error in uploading files"." ".$qrry_1
                 );
 
             $output = array("code" => "201", "msg" => $array_out);
             print_r(json_encode($output, true));
         }
-
 
     } else {
         $array_out = array();
@@ -741,12 +1296,32 @@ function showAllVideos()
         }
 
 
+
         $array_out = array();
         while ($row = mysqli_fetch_array($query)) {
-
             $query1 = mysqli_query($conn, "select * from users where fb_id='" . $row['fb_id'] . "' ");
-            $rd = mysqli_fetch_object($query1);
+            $page_name=null;
+            $page_pic=null;
+            if ($row['upload_from']=="page") {
+                $page_query=mysqli_query($conn, "select * from pages where owner_id='" . $row['fb_id'] . "' ");
+                $page_data = mysqli_fetch_object($page_query);
+                $page_name=$page_data->name;
+                $page_pic=$page_data->profile_pic;
+            }
 
+
+            $rd = mysqli_fetch_object($query1);
+            $followed_fb_id = $row['fb_id'];
+            $isFriend = null;
+            $fb_id = htmlspecialchars(strip_tags($event_json['fb_id'], ENT_QUOTES));
+            $sql = "SELECT * FROM `follow_users` WHERE fb_id='$fb_id' && followed_fb_id='$followed_fb_id'";
+            $result = mysqli_query($conn, $sql);
+            if (mysqli_num_rows($result) > 0) {
+                $isFriend = true;
+
+            } else {
+                $isFriend = false;
+            }
             $query112 = mysqli_query($conn, "select * from sound where id='" . $row['sound_id'] . "' ");
             $rd12 = mysqli_fetch_object($query112);
 
@@ -766,9 +1341,16 @@ function showAllVideos()
                     "fb_id" => $row['fb_id'],
                     "user_info" => array
                     (
+
                         "first_name" => $rd->first_name,
+                        "isFriend" => $isFriend,
+                        "account_type" => $rd->account_type,
+                        "message_privacy" => $rd->message_privacy,
+                        "comment_privacy" => $rd->comment_privacy,
+                        "live_privacy" => $rd->live_privacy,
                         "last_name" => $rd->last_name,
                         "profile_pic" => $rd->profile_pic,
+                        "verified" => $rd->verified,
                         "username" => $rd->username,
                     ),
                     "count" => array
@@ -781,6 +1363,10 @@ function showAllVideos()
                     "thum" => checkVideoUrl($row['thum']),
                     "gif" => checkVideoUrl($row['gif']),
                     "description" => $row['description'],
+                    "page_name" => $page_name,
+                    "page_pic" => $page_pic,
+                    "upload_from" => $row['upload_from'],
+                    "url" => $row['url'],
                     "sound" => array
                     (
                         "id" => $rd12->id,
@@ -917,7 +1503,15 @@ function showMyAllVideos()
     if (isset($event_json['fb_id']) && isset($event_json['my_fb_id'])) {
         $fb_id = htmlspecialchars(strip_tags($event_json['fb_id'], ENT_QUOTES));
         $my_fb_id = htmlspecialchars(strip_tags($event_json['my_fb_id'], ENT_QUOTES));
+        $isFriend = null;
+        $sql = "SELECT * FROM `follow_users` WHERE fb_id='$my_fb_id' && followed_fb_id='$fb_id'";
+        $result = mysqli_query($conn, $sql);
+        if (mysqli_num_rows($result) > 0) {
+            $isFriend = true;
 
+        } else {
+            $isFriend = false;
+        }
         $query1 = mysqli_query($conn, "select * from users where fb_id='" . $fb_id . "' ");
         $rd = mysqli_fetch_object($query1);
         if (mysqli_num_rows($query1)) {
@@ -947,6 +1541,8 @@ function showMyAllVideos()
                         "gif" => checkVideoUrl($row['gif'] . "?time=" . rand()),
                         "description" => $row['description'],
                         "liked" => $liked_count['count'],
+                        "upload_from" => $row['upload_from'],
+                        "url" => $row['url'],
                         "count" => array
                         (
                             "like_count" => $countLikes_count['count'],
@@ -1030,8 +1626,13 @@ function showMyAllVideos()
                     "user_info" => array
                     (
                         "fb_id" => $rd->fb_id,
+                        "isFriend" => $isFriend,
                         "first_name" => $rd->first_name,
                         "last_name" => $rd->last_name,
+                        "account_type" => $rd->account_type,
+                        "message_privacy" => $rd->message_privacy,
+                        "comment_privacy" => $rd->comment_privacy,
+                        "live_privacy" => $rd->live_privacy,
                         "profile_pic" => $rd->profile_pic,
                         "gender" => $rd->gender,
                         "created" => $rd->created,
@@ -1738,6 +2339,7 @@ function get_followers()
                     "last_name" => $rd1->last_name,
                     "gender" => $rd1->gender,
                     "bio" => $rd1->bio,
+                    "page_have" => $rd1->page_have,
                     "profile_pic" => $rd1->profile_pic,
                     "created" => $rd1->created,
                     "follow_Status" => array
@@ -1809,6 +2411,7 @@ function get_followings()
                     "last_name" => $rd1->last_name,
                     "gender" => $rd1->gender,
                     "bio" => $rd1->bio,
+                    "page_have" => $rd->page_have,
                     "profile_pic" => $rd1->profile_pic,
                     "created" => $rd1->created,
                     "follow_Status" => array
@@ -2117,7 +2720,7 @@ function edit_profile()
     //print_r($event_json);
     //0= owner  1= company 2= ind mechanic
 
-    checkTokon();
+    // checkTokon();
 
     if (isset($event_json['fb_id']) && isset($event_json['first_name']) && isset($event_json['last_name']) && isset($event_json['gender']) && isset($event_json['bio'])) {
         $fb_id = htmlspecialchars(strip_tags($event_json['fb_id'], ENT_QUOTES));
@@ -2179,6 +2782,74 @@ function edit_profile()
 
 }
 
+function checkFollow()
+{
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+    // checkTokon();
+    if (isset($event_json['fb_id']) && isset($event_json['followed_fb_id'])) {
+        $fb_id = htmlspecialchars(strip_tags($event_json['fb_id'], ENT_QUOTES));
+        $followed_fb_id = htmlspecialchars(strip_tags($event_json['followed_fb_id'], ENT_QUOTES));
+        $sql = "SELECT * FROM `follow_users` WHERE fb_id='$fb_id' && followed_fb_id='$followed_fb_id'";
+        $result = mysqli_query($conn, $sql);
+        if (mysqli_num_rows($result) > 0) {
+            $response["isFriend"] = true;
+            print_r(json_encode($response), true);
+        } else {
+            $response["isFriend"] = false;
+            print_r(json_encode($response), true);
+        }
+    } else {
+        $response["message"] = "Unauthorized Request";
+        print_r(json_encode($response), true);
+    }
+
+
+}
+
+function sentFollowRequest()
+{
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+    //print_r($event_json);
+    //0= owner  1= company 2= ind mechanic
+    //checkTokon();
+
+    if (isset($event_json['fb_id']) && isset($event_json['followed_fb_id']) && isset($event_json['status'])) {
+        $fb_id = htmlspecialchars(strip_tags($event_json['fb_id'], ENT_QUOTES));
+        $followed_fb_id = htmlspecialchars(strip_tags($event_json['followed_fb_id'], ENT_QUOTES));
+        $status = htmlspecialchars(strip_tags($event_json['status'], ENT_QUOTES));
+        if ($status == "1") {
+            $sql = "INSERT INTO follow_request(fb_id, followed_fb_id) VALUES ('$fb_id','$followed_fb_id')";
+            $query = mysqli_query($conn, $sql);
+            if ($query) {
+                $response["success"] = true;
+                print_r(json_encode($response), true);
+            } else {
+                $response["success"] = false;
+                print_r(json_encode($response), true);
+            }
+        } else if ($status == "0") {
+            $sql = "DELETE FROM `follow_request` WHERE fb_id='$fb_id' && followed_fb_id='$followed_fb_id'";
+            $query = mysqli_query($conn, $sql);
+            if ($query) {
+                $response["success"] = true;
+                print_r(json_encode($response), true);
+            } else {
+                $response["success"] = false;
+                print_r(json_encode($response), true);
+            }
+        }
+
+
+    } else {
+        $response["message"] = "Unauthorized Request";
+        print_r(json_encode($response), true);
+    }
+
+}
 
 function follow_users()
 {
@@ -2189,7 +2860,7 @@ function follow_users()
     //print_r($event_json);
     //0= owner  1= company 2= ind mechanic
 
-    checkTokon();
+    // checkTokon();
 
     if (isset($event_json['fb_id']) && isset($event_json['followed_fb_id']) && isset($event_json['status'])) {
         $fb_id = htmlspecialchars(strip_tags($event_json['fb_id'], ENT_QUOTES));
@@ -2563,9 +3234,11 @@ function get_user_data()
                 "fb_id" => $row['fb_id'],
                 "username" => $row['username'],
                 "first_name" => $row['first_name'],
+
                 "last_name" => $row['last_name'],
                 "gender" => $row['gender'],
                 "bio" => $row['bio'],
+                "page_have" => $row['page_have'],
                 "profile_pic" => $row['profile_pic'],
                 "created" => $row['created']
             );
@@ -2886,6 +3559,7 @@ function getSingleSectionDetails()
 
 }
 
+
 function editSoundSection()
 {
     require_once("config.php");
@@ -3030,7 +3704,7 @@ function checkTokon()
     //get headers
 
 
-    echo $get_device_tkon = "select * from device_tokon where fb_id='" . $header_fb_id . "' and tokon='" . $header_tokon . "' and phone_id='" . $header_deviceid . "' ";
+    $get_device_tkon = "select * from device_tokon where fb_id='" . $header_fb_id . "' and tokon='" . $header_tokon . "'";
     $get_device_tkon1 = mysqli_query($conn, $get_device_tkon);
     $countRows = mysqli_num_rows($get_device_tkon1);
 
@@ -3187,6 +3861,131 @@ function search()
 
 }
 
+function allProfileVerification()
+{
+
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+    //print_r($event_json);
+
+
+    $query1 = mysqli_query($conn, "select * from verification_request ");
+    $array_out1 = array();
+    while ($row1 = mysqli_fetch_array($query1)) {
+        $query1 = mysqli_query($conn, "select * from users where fb_id='" . $row1['fb_id'] . "' ");
+        $rd = mysqli_fetch_object($query1);
+
+        $array_out1[] =
+            array(
+                "id" => $row1['id'],
+                "fb_id" => $row1['fb_id'],
+                "user_info" => array
+                (
+                    "first_name" => $rd->first_name,
+                    "last_name" => $rd->last_name,
+                    "profile_pic" => $rd->profile_pic,
+                    "username" => "@" . $rd->username,
+                    "verified" => $rd->verified,
+                ),
+                "attachment" => $row1['attachment'],
+                "created" => $row1['created']
+            );
+    }
+
+
+    $output = array("code" => "200", "msg" => $array_out1);
+    print_r(json_encode($output, true));
+}
+
+
+function updateVerificationStatus()
+{
+
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+    //print_r($event_json);
+
+    $fb_id = htmlspecialchars(strip_tags($event_json['fb_id'], ENT_QUOTES));
+    $action = htmlspecialchars(strip_tags($event_json['action'], ENT_QUOTES));
+
+    if ($action == "approve") {
+        $qrry_1 = "update users SET verified ='1' WHERE fb_id ='" . $fb_id . "' ";
+        if (mysqli_query($conn, $qrry_1)) {
+            mysqli_query($conn, "Delete from verification_request where fb_id ='" . $fb_id . "' ");
+            $array_out = array();
+
+            $array_out[] =
+                array(
+                    "response" => "success");
+
+            $output = array("code" => "200", "msg" => $array_out);
+            print_r(json_encode($output, true));
+        } else {
+            $array_out = array();
+
+            $array_out[] =
+                array(
+                    "response" => "error");
+
+            $output = array("code" => "201", "msg" => $array_out);
+            print_r(json_encode($output, true));
+        }
+    } else
+        if ($action == "decline") {
+            mysqli_query($conn, "Delete from verification_request where fb_id ='" . $fb_id . "' ");
+
+            $array_out = array();
+
+            $array_out[] =
+                array(
+                    "response" => "request rejected and deleted");
+
+            $output = array("code" => "200", "msg" => $array_out);
+            print_r(json_encode($output, true));
+        }
+
+
+}
+
+
+function getVerified()
+{
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+    //print_r($event_json);
+    $fb_id = htmlspecialchars(strip_tags($event_json['fb_id'], ENT_QUOTES));
+    $attachment = htmlspecialchars(strip_tags($event_json['attachment'], ENT_QUOTES));
+
+    $qrry_1 = "insert into verification_request(fb_id,attachment)values(";
+    $qrry_1 .= "'" . $fb_id . "',";
+    $qrry_1 .= "'" . $attachment . "'";
+    $qrry_1 .= ")";
+    if (mysqli_query($conn, $qrry_1)) {
+
+
+        $array_out = array();
+        $array_out[] =
+            //array("code" => "200");
+            array(
+                "response" => "successful");
+
+        $output = array("code" => "200", "msg" => $array_out);
+        print_r(json_encode($output, true));
+    } else {
+        //echo mysqli_error();
+        $array_out = array();
+
+        $array_out[] =
+            array(
+                "response" => "problem");
+
+        $output = array("code" => "201", "msg" => $array_out);
+        print_r(json_encode($output, true));
+    }
+}
 
 ////
 
