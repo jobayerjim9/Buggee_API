@@ -117,8 +117,8 @@ if (isset($_GET["p"])) {
         admin_show_allVideos();
     } else if ($_GET["p"] == "admin_addSection") {
         admin_addSection();
-    } else if ($_GET["p"] == "DeleteSoundSectino") {
-        DeleteSoundSectino();
+    } else if ($_GET["p"] == "DeleteSoundSection") {
+        DeleteSoundSection();
     } else if ($_GET["p"] == "all_discovery_sections") {
         all_discovery_sections();
     } else if ($_GET["p"] == "deleteSection") {
@@ -143,6 +143,24 @@ if (isset($_GET["p"])) {
         updateVerificationStatus();
     } else if ($_GET["p"] == "getVerified") {
         getVerified();
+    }else if ($_GET["p"] == "deleteUser") {
+        deleteUser();
+    }else if ($_GET["p"] == "editUser") {
+        editUser();
+    }else if ($_GET["p"] == "adminChangePassword") {
+        adminChangePassword();
+    }else if ($_GET["p"] == "getCommentsByVideo") {
+        getCommentsByVideo();
+    }else if ($_GET["p"] == "deleteComment") {
+        deleteComment();
+    }else if ($_GET["p"] == "getAllPage") {
+        getAllPage();
+    }else if ($_GET["p"] == "deletePage") {
+        deletePage();
+    }else if ($_GET["p"] == "blockPage") {
+        blockPage();
+    }else if ($_GET["p"] == "turnOnOffLive") {
+        turnOnOffLive();
     }
 
 
@@ -2990,9 +3008,7 @@ function All_Users()
     require_once("config.php");
     $input = @file_get_contents("php://input");
     $event_json = json_decode($input, true);
-
     $query = mysqli_query($conn, "select * from users order by id DESC");
-
     $array_out = array();
     while ($row = mysqli_fetch_array($query)) {
 
@@ -3008,6 +3024,13 @@ function All_Users()
                 "version" => $row['version'],
                 "device" => $row['device'],
                 "signup_type" => $row['signup_type'],
+                "dob" => $row['dob'],
+                "account_type" => $row['account_type'],
+                "message_privacy" => $row['message_privacy'],
+                "comment_privacy" => $row['comment_privacy'],
+                "live_privacy" => $row['live_privacy'],
+                "verified" => $row['verified'],
+                "page_have" => $row['page_have'],
                 "created" => $row['created'],
 
             );
@@ -3057,17 +3080,13 @@ function admin_uploadSound()
     $event_json = json_decode($input, true);
     //print_r($event_json);
     //0= owner  1= company 2= ind mechanic
+    $fileUrl = $event_json['fileUrl'];
+    if (isset($fileUrl)) {
 
-    if (STATUS == "demo") {
-        die();
-    }
-
-    if (isset($event_json['fileUrl'])) {
-        $fileUrl = $event_json['fileUrl'];
         $sound_name = htmlspecialchars(strip_tags($event_json['sound_name'], ENT_QUOTES));
         $description = htmlspecialchars(strip_tags($event_json['description'], ENT_QUOTES));
         $section_id = htmlspecialchars(strip_tags($event_json['section_id'], ENT_QUOTES));
-        $thum = $event_json['image']['file_data'];
+        $thum = $event_json["thum"];
         $fileName = rand();
 
         $thumPath = "upload/audio/" . $fileName . ".jpg";
@@ -3080,10 +3099,11 @@ function admin_uploadSound()
         $qrry_1 .= ")";
         if (mysqli_query($conn, $qrry_1)) {
             $insert_id = mysqli_insert_id($conn);
-            @copy($fileUrl, 'upload/audio/' . $insert_id . '.aac');
 
             $thum = base64_decode($thum);
+            $fileUrl=base64_decode($fileUrl);
             file_put_contents("upload/audio/" . $fileName . ".jpg", $thum);
+            file_put_contents('upload/audio/' . $insert_id . '.aac', $fileUrl);
 
             $array_out = array();
             $array_out[] =
@@ -3248,7 +3268,7 @@ function get_user_data()
     print_r(json_encode($output, true));
 }
 
-function changePassword()
+function adminChangePassword()
 {
 
     require_once("config.php");
@@ -3323,10 +3343,6 @@ function DeleteSound()
     $event_json = json_decode($input, true);
     //print_r($event_json);
 
-    if (STATUS == "demo") {
-        die();
-    }
-
     if (isset($event_json['id'])) {
         $id = htmlspecialchars(strip_tags($event_json['id'], ENT_QUOTES));
 
@@ -3361,10 +3377,6 @@ function DeleteVideo()
     $input = @file_get_contents("php://input");
     $event_json = json_decode($input, true);
     //print_r($event_json);
-
-    if (STATUS == "demo") {
-        die();
-    }
 
     if (isset($event_json['id'])) {
         $id = htmlspecialchars(strip_tags($event_json['id'], ENT_QUOTES));
@@ -3415,10 +3427,6 @@ function admin_addSection()
     $event_json = json_decode($input, true);
     //print_r($event_json['name']);
 
-    if (STATUS == "demo") {
-        die();
-    }
-
     $name = $event_json['name'];
     if (isset($name)) {
         $qrry_1 = "insert into sound_section(section_name)values(";
@@ -3459,16 +3467,12 @@ function admin_addSection()
     }
 }
 
-function DeleteSoundSectino()
+function DeleteSoundSection()
 {
     require_once("config.php");
     $input = @file_get_contents("php://input");
     $event_json = json_decode($input, true);
     //print_r($event_json);
-
-    if (STATUS == "demo") {
-        die();
-    }
 
     if (isset($event_json['id'])) {
         $id = htmlspecialchars(strip_tags($event_json['id'], ENT_QUOTES));
@@ -3588,10 +3592,10 @@ function addVideointoDiscovry()
     $event_json = json_decode($input, true);
 
     //print_r($event_json);
-    $id = strip_tags($event_json['id']);
-    $section_name = htmlspecialchars(strip_tags($event_json['section_name'], ENT_QUOTES));
+    $id = strip_tags($event_json['video_id']);
+    $section_id = htmlspecialchars(strip_tags($event_json['section_id'], ENT_QUOTES));
 
-    $qrry_1 = "update videos set section='" . $section_name . "'  where id ='" . $id . "' ";
+    $qrry_1 = "update videos set section='" . $section_id . "'  where id ='" . $id . "' ";
     $log_in_rs = mysqli_query($conn, $qrry_1);
     $rd = mysqli_fetch_object($log_in_rs);
 
@@ -3907,13 +3911,13 @@ function updateVerificationStatus()
     $event_json = json_decode($input, true);
     //print_r($event_json);
 
-    $fb_id = htmlspecialchars(strip_tags($event_json['fb_id'], ENT_QUOTES));
+    $id = htmlspecialchars(strip_tags($event_json['id'], ENT_QUOTES));
     $action = htmlspecialchars(strip_tags($event_json['action'], ENT_QUOTES));
 
     if ($action == "approve") {
-        $qrry_1 = "update users SET verified ='1' WHERE fb_id ='" . $fb_id . "' ";
+        $qrry_1 = "update users SET verified ='1' WHERE fb_id ='" . $id . "' ";
         if (mysqli_query($conn, $qrry_1)) {
-            mysqli_query($conn, "Delete from verification_request where fb_id ='" . $fb_id . "' ");
+            mysqli_query($conn, "Delete from verification_request where fb_id ='" . $id . "' ");
             $array_out = array();
 
             $array_out[] =
@@ -3934,7 +3938,7 @@ function updateVerificationStatus()
         }
     } else
         if ($action == "decline") {
-            mysqli_query($conn, "Delete from verification_request where fb_id ='" . $fb_id . "' ");
+            mysqli_query($conn, "Delete from verification_request where fb_id ='" . $id . "' ");
 
             $array_out = array();
 
@@ -3986,7 +3990,241 @@ function getVerified()
         print_r(json_encode($output, true));
     }
 }
+function deleteUser() {
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+    //print_r($event_json);
+    $id = htmlspecialchars(strip_tags($event_json['id'], ENT_QUOTES));
+    if (isset($id)) {
+        $sql="DELETE FROM users WHERE fb_id='$id'";
+        if (mysqli_query($conn,$sql)) {
+            $response["success"]=true;
+        }
+        else {
+            $response["success"]=false;
+        }
+        print_r(json_encode($response, true));
+    }
+    else{
+        $response["success"]=false;
+        $response["message"]="Params Missing";
+        print_r(json_encode($response, true));
+    }
+}
+function editUser() {
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+    //print_r($event_json);
+    $id = htmlspecialchars(strip_tags($event_json['id'], ENT_QUOTES));
+    $username = htmlspecialchars(strip_tags($event_json['username'], ENT_QUOTES));
+    $first_name = htmlspecialchars(strip_tags($event_json['first_name'], ENT_QUOTES));
+    $last_name = htmlspecialchars(strip_tags($event_json['last_name'], ENT_QUOTES));
+    $gender = htmlspecialchars(strip_tags($event_json['gender'], ENT_QUOTES));
+    $bio = htmlspecialchars(strip_tags($event_json['bio'], ENT_QUOTES));
+    $dob = htmlspecialchars(strip_tags($event_json['dob'], ENT_QUOTES));
+    $account_type = htmlspecialchars(strip_tags($event_json['account_type'], ENT_QUOTES));
+    $message_privacy = htmlspecialchars(strip_tags($event_json['message_privacy'], ENT_QUOTES));
+    $comment_privacy = htmlspecialchars(strip_tags($event_json['comment_privacy'], ENT_QUOTES));
+    $live_privacy = htmlspecialchars(strip_tags($event_json['live_privacy'], ENT_QUOTES));
+    $verified = htmlspecialchars(strip_tags($event_json['verified'], ENT_QUOTES));
+    $page_have = htmlspecialchars(strip_tags($event_json['page_have'], ENT_QUOTES));
 
+
+    if (isset($id)) {
+        $sql="UPDATE users SET username='$username',first_name='$first_name',last_name='$last_name',gender='$gender',bio='$bio',dob='$dob',account_type='$account_type',message_privacy='$message_privacy',comment_privacy='$comment_privacy',live_privacy='$live_privacy',verified='$verified',page_have='$page_have' WHERE fb_id='$id'";
+        if (mysqli_query($conn,$sql)) {
+            $response["success"]=true;
+        }
+        else {
+            $response["success"]=false;
+        }
+        print_r(json_encode($response, true));
+    }
+    else{
+        $response["success"]=false;
+        $response["message"]="Params Missing";
+        print_r(json_encode($response, true));
+    }
+}
+function getCommentsByVideo() {
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+    //print_r($event_json);
+    $video_id = htmlspecialchars(strip_tags($event_json['video_id'], ENT_QUOTES));
+
+
+    if (isset($video_id)) {
+
+        $sql="SELECT * FROM video_comment WHERE video_id='$video_id'";
+        $result=mysqli_query($conn,$sql);
+        if (mysqli_num_rows($result)>0) {
+            while ($row1 = mysqli_fetch_array($result)) {
+                $query1 = mysqli_query($conn, "select * from users where fb_id='" . $row1['fb_id'] . "' ");
+                $rd = mysqli_fetch_object($query1);
+                $array_out1[] =
+                    array(
+                        "comment_id" => $row1['id'],
+                        "user_id" => $row1['fb_id'],
+                        "user_info" => array
+                        (
+                            "first_name" => $rd->first_name,
+                            "last_name" => $rd->last_name,
+                            "profile_pic" => $rd->profile_pic,
+                            "username" => $rd->username,
+                            "verified" => $rd->verified,
+                        ),
+                        "comments" => $row1['comments'],
+                        "created" => $row1['created']
+                    );
+            }
+            $output = array("code" => "200", "msg" => $array_out1);
+        }
+        else {
+            $output = array("code" => "404", "msg" => "No Comment Found");
+        }
+        print_r(json_encode($output, true));
+    }
+    else{
+        $output = array("code" => "404", "msg" => "Params Missing");
+        print_r(json_encode($output, true));
+    }
+}
+function deleteComment() {
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+    //print_r($event_json);
+    $id = htmlspecialchars(strip_tags($event_json['comment_id'], ENT_QUOTES));
+    if (isset($id)) {
+        $sql="DELETE FROM video_comment WHERE id='$id'";
+        if (mysqli_query($conn,$sql)) {
+            $response["success"]=true;
+        }
+        else {
+            $response["success"]=false;
+        }
+        print_r(json_encode($response, true));
+    }
+    else{
+        $response["success"]=false;
+        $response["message"]="Params Missing";
+        print_r(json_encode($response, true));
+    }
+}
+function getAllPage()
+{
+
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+    $query = mysqli_query($conn, "SELECT * FROM pages order by id DESC");
+    $array_out = array();
+    while ($row = mysqli_fetch_array($query)) {
+        $array_out[] =
+            array(
+                "id" => $row['id'],
+                "owner_id" => $row['owner_id'],
+                "profile_pic" => $row['profile_pic'],
+                "name" => $row['name'],
+                "created" => $row['created'],
+                "description" => $row['description']
+            );
+
+    }
+    $output = array("code" => "200", "msg" => $array_out);
+    print_r(json_encode($output, true));
+
+}
+function deletePage() {
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+    //print_r($event_json);
+    $id = htmlspecialchars(strip_tags($event_json['id'], ENT_QUOTES));
+    if (isset($id)) {
+
+
+        $sql_get="SELECT * FROM pages WHERE id='$id'";
+        $result_get=mysqli_query($conn,$sql_get);
+        $data=mysqli_fetch_object($result_get);
+        $sql_del="DELETE FROM pages WHERE id='$id'";
+        if (mysqli_query($conn,$sql_del)) {
+            $sql_update="UPDATE users SET page_have=0 WHERE fb_id='$data->owner_id'";
+            if (mysqli_query($conn,$sql_update)) {
+                $response["success"] = true;
+            }
+            else {
+                $response["success"]=false;
+            }
+        }
+        else {
+            $response["success"]=false;
+        }
+        print_r(json_encode($response, true));
+    }
+    else{
+        $response["success"]=false;
+        $response["message"]="Params Missing";
+        print_r(json_encode($response, true));
+    }
+}
+function blockPage()
+{
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+    //print_r($event_json);
+
+    if (isset($event_json['page_id'])) {
+        $page_id = htmlspecialchars(strip_tags($event_json['page_id'], ENT_QUOTES));
+        $block = htmlspecialchars(strip_tags($event_json['block'], ENT_QUOTES));
+
+        mysqli_query($conn, "update pages set block='" . $block . "' where id ='" . $page_id . "' ");
+
+        $array_out = array();
+
+        $array_out[] =
+            array(
+                "response" => "page blocked");
+
+        $output = array("code" => "200", "msg" => $array_out);
+        print_r(json_encode($output, true));
+
+    } else {
+        $array_out = array();
+        $array_out[] =
+            array(
+                "response" => "json parem missing"
+            );
+
+        $output = array("code" => "201", "msg" => $array_out);
+        print_r(json_encode($output, true));
+    }
+}
+function turnOnOffLive() {
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+    $status = htmlspecialchars(strip_tags($event_json['status'], ENT_QUOTES));
+    if (isset($status)) {
+        $sql="UPDATE live_off_on SET status='$status' WHERE id=0";
+        if (mysqli_query($conn,$sql)) {
+            $response["success"]=true;
+        }
+        else {
+            $response["success"]=false;
+        }
+        print_r(json_encode($response, true));
+    }
+    else{
+        $response["success"]=false;
+        $response["message"]="Params Missing";
+        print_r(json_encode($response, true));
+    }
+}
 ////
 
 
