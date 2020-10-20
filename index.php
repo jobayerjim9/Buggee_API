@@ -1,6 +1,11 @@
 <?php
 
 
+ini_set('display_errors', 1);
+
+use \Firebase\JWT\JWT;
+
+require './vendor/autoload.php';
 if (isset($_GET["p"])) {
     if ($_GET["p"] == "uploadVideo") {
         uploadvideo();
@@ -36,10 +41,18 @@ if (isset($_GET["p"])) {
         loginusername();
     } else if ($_GET["p"] == "userexist") {
         checkexist();
+    } else if ($_GET["p"] == "createImageStory") {
+        createImageStory();
     } else if ($_GET["p"] == "signup") {
         signup();
     } else if ($_GET["p"] == "showAllVideos") {
         showAllVideos();
+    } else if ($_GET["p"] == "showAllStory") {
+        showAllStory();
+    } else if ($_GET["p"] == "publishUnpublishPage") {
+        publishUnpublishPage();
+    } else if ($_GET["p"] == "getImageStory") {
+        getImageStory();
     } else if ($_GET["p"] == "showMyAllVideos") {
         showMyAllVideos();
     } else if ($_GET["p"] == "likeDislikeVideo") {
@@ -74,6 +87,12 @@ if (isset($_GET["p"])) {
         updateBio();
     } else if ($_GET["p"] == "get_followers") {
         get_followers();
+    } else if ($_GET["p"] == "updatePageCategory") {
+        updatePageCategory();
+    } else if ($_GET["p"] == "updatePageButton") {
+        updatePageButton();
+    } else if ($_GET["p"] == "getUserLiveStatus") {
+        getUserLiveStatus();
     } else if ($_GET["p"] == "get_followings") {
         get_followings();
     } else if ($_GET["p"] == "SearchByHashTag") {
@@ -102,6 +121,14 @@ if (isset($_GET["p"])) {
         updatePageDesc();
     } else if ($_GET["p"] == "updatePagePic") {
         updatePagePic();
+    } else if ($_GET["p"] == "report") {
+        report();
+    } else if ($_GET["p"] == "reportProblem") {
+        reportProblem();
+    } else if ($_GET["p"] == "useThisIdAsPage") {
+        useThisIdAsPage();
+    } else if ($_GET["p"] == "updateToken") {
+        updateToken();
     } //admin panel functions
     else if ($_GET["p"] == "Admin_Login") {
         Admin_Login();
@@ -143,30 +170,68 @@ if (isset($_GET["p"])) {
         updateVerificationStatus();
     } else if ($_GET["p"] == "getVerified") {
         getVerified();
-    }else if ($_GET["p"] == "deleteUser") {
+    } else if ($_GET["p"] == "deleteUser") {
         deleteUser();
-    }else if ($_GET["p"] == "editUser") {
+    } else if ($_GET["p"] == "editUser") {
         editUser();
-    }else if ($_GET["p"] == "adminChangePassword") {
+    } else if ($_GET["p"] == "adminChangePassword") {
         adminChangePassword();
-    }else if ($_GET["p"] == "getCommentsByVideo") {
+    } else if ($_GET["p"] == "getCommentsByVideo") {
         getCommentsByVideo();
-    }else if ($_GET["p"] == "deleteComment") {
+    } else if ($_GET["p"] == "deleteComment") {
         deleteComment();
-    }else if ($_GET["p"] == "getAllPage") {
+    } else if ($_GET["p"] == "getAllPage") {
         getAllPage();
-    }else if ($_GET["p"] == "deletePage") {
+    } else if ($_GET["p"] == "deletePage") {
         deletePage();
-    }else if ($_GET["p"] == "blockPage") {
+    } else if ($_GET["p"] == "blockPage") {
         blockPage();
-    }else if ($_GET["p"] == "turnOnOffLive") {
+    } else if ($_GET["p"] == "turnOnOffLive") {
         turnOnOffLive();
+    } else if ($_GET["p"] == "viewReport") {
+        viewReport();
     }
 
 
 } else {
     echo "Not Found";
 
+}
+
+
+function updateToken()
+{
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+    $id = $event_json["id"];
+    $tokon = $event_json["token"];
+    $sql = "UPDATE users SET tokon='$tokon' WHERE fb_id='$id'";
+    if (mysqli_query($conn, $sql)) {
+        $response["success"] = true;
+    } else {
+        $response["success"] = false;
+    }
+    print_r(json_encode($response, true));
+}
+
+function getUserLiveStatus()
+{
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+    $id = $event_json["id"];
+    $sql = "SELECT * FROM `users` WHERE fb_id='$id'";
+    $result = mysqli_query($conn, $sql);
+    if ($result) {
+        $user = mysqli_fetch_object($result);
+        $response["success"] = true;
+        $response["status"] = $user->live_off_on;
+    } else {
+        $response["success"] = false;
+        $response["message"] = "Something Error With Server!";
+    }
+    print_r(json_encode($response, true));
 }
 
 function getAllLive()
@@ -208,6 +273,7 @@ function getAllLive()
 
 
 }
+
 function updatePageName()
 {
     require_once("config.php");
@@ -216,11 +282,53 @@ function updatePageName()
     $id = $event_json["id"];
     $name = $event_json["name"];
     $sql = "UPDATE `pages` SET name='$name' WHERE owner_id='$id'";
-    if (mysqli_query($conn, $sql)){
-        $response["success"]=true;
+    if (mysqli_query($conn, $sql)) {
+        $response["success"] = true;
+    } else {
+        $response["success"] = false;
     }
-    else{
-        $response["success"]=false;
+    print_r(json_encode($response, true));
+
+
+}
+
+function publishUnpublishPage()
+{
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+    $id = $event_json["id"];
+    $status = $event_json["status"];
+    $sql = "UPDATE pages SET published='$status' WHERE owner_id='$id'";
+    if (mysqli_query($conn, $sql)) {
+        $response["success"] = true;
+
+    } else {
+        $response["success"] = false;
+    }
+    print_r(json_encode($response, true));
+
+
+}
+
+function useThisIdAsPage()
+{
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+    $id = $event_json["id"];
+    $sql = "UPDATE users SET id_as_page=1 WHERE fb_id='$id'";
+    if (mysqli_query($conn, $sql)) {
+        $response["success"] = true;
+//        $sql = "SELECT * FROM `users` WHERE fb_id='$id'";
+//        $query = mysqli_query($conn, $sql);
+//        $data = mysqli_fetch_object($query);
+//        $name = $data->first_name . " " . $data->last_name;
+//        $page_sql = "INSERT INTO pages(owner_id, profile_pic, name) VALUES ('$id','$data->profile_pic','$name')";
+//        $page_query = mysqli_query($conn, $page_sql);
+
+    } else {
+        $response["success"] = false;
     }
     print_r(json_encode($response, true));
 
@@ -235,19 +343,18 @@ function updatePageDesc()
     $id = $event_json["id"];
     $desc = $event_json["desc"];
     $sql = "UPDATE `pages` SET description='$desc' WHERE owner_id='$id'";
-    if (mysqli_query($conn, $sql)){
-        $response["success"]=true;
-    }
-    else{
-        $response["success"]=false;
+    if (mysqli_query($conn, $sql)) {
+        $response["success"] = true;
+    } else {
+        $response["success"] = false;
     }
     print_r(json_encode($response, true));
 
 
 }
+
 function updatePagePic()
 {
-
     require_once("config.php");
     $input = @file_get_contents("php://input");
     $event_json = json_decode($input, true);
@@ -256,18 +363,19 @@ function updatePagePic()
     $fileName = time() . "_" . rand();
     $pic_url = "upload/profile_pic/" . $fileName . ".jpeg";
     $pic = base64_decode($pic_base64);
-    file_put_contents($pic_url,$pic);
-    $sql = "UPDATE `pages` SET profile_pic='$pic_url' WHERE owner_id='$id'";
-    if (mysqli_query($conn, $sql)){
-        $response["success"]=true;
-    }
-    else{
-        $response["success"]=false;
+    file_put_contents($pic_url, $pic);
+    $s3_url = uploadS3($pic_url, "profile_pic", $fileName);
+    $sql = "UPDATE `pages` SET profile_pic='$s3_url' WHERE owner_id='$id'";
+    if (mysqli_query($conn, $sql)) {
+        $response["success"] = true;
+    } else {
+        $response["success"] = false;
     }
     print_r(json_encode($response, true));
 
 
 }
+
 function getPageInfo()
 {
     require_once("config.php");
@@ -276,20 +384,59 @@ function getPageInfo()
     $id = $event_json["id"];
     $sql = "SELECT * FROM pages WHERE owner_id='$id' LIMIT 1";
     $result = mysqli_query($conn, $sql);
-    if (mysqli_num_rows($result)>0){
-        $data=mysqli_fetch_object($result);
-        $response["success"]=true;
-        $response["profile_pic"]=$data->profile_pic;
-        $response["name"]=$data->name;
-        $response["description"]=$data->description;
-    }
-    else{
-        $response["success"]=false;
+    if (mysqli_num_rows($result) > 0) {
+        $data = mysqli_fetch_object($result);
+        $response["success"] = true;
+        $response["profile_pic"] = checkVideoUrl($data->profile_pic);
+        $response["id"] = $data->id;
+        $response["name"] = $data->name;
+        $response["description"] = $data->description;
+        $response["category"] = $data->category;
+        $response["published"] = $data->published;
+    } else {
+        $response["success"] = false;
     }
     print_r(json_encode($response, true));
 
 
 }
+
+function updatePageCategory()
+{
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+    $id = $event_json["id"];
+    $category = $event_json["category"];
+    $sql = "UPDATE pages SET category='$category' WHERE owner_id='$id'";
+    if (mysqli_query($conn, $sql)) {
+        $response["success"] = true;
+    } else {
+        $response["success"] = false;
+    }
+    print_r(json_encode($response, true));
+
+
+}
+
+function updatePageButton()
+{
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+    $id = $event_json["id"];
+    $button = $event_json["button"];
+    $sql = "UPDATE pages SET button='$button' WHERE owner_id='$id'";
+    if (mysqli_query($conn, $sql)) {
+        $response["success"] = true;
+    } else {
+        $response["success"] = false;
+    }
+    print_r(json_encode($response, true));
+
+
+}
+
 function deleteLive()
 {
     require_once("config.php");
@@ -330,6 +477,56 @@ function createLive()
 
 
 }
+
+function reportProblem()
+{
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+//    checkTokon();
+    $reported_problem = $event_json["reported_problem"];
+    $id = $event_json["id"];
+    if (isset($id)) {
+        $sql = "INSERT INTO reported_problems(reported_by, reported_problem) VALUES ('$id', '$reported_problem')";
+        if (mysqli_query($conn, $sql)) {
+            $response["success"] = true;
+        } else {
+            $response["success"] = false;
+        }
+        print_r(json_encode($response, true));
+    }
+
+
+}
+
+function report()
+{
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+//    checkTokon();
+    $content_id = $event_json["content_id"];
+    $reported_by = $event_json["reported_by"];
+    $type = $event_json["type"];
+    $exist = "SELECT * FROM `report` WHERE content_id='$content_id' && reported_by='$reported_by'";
+    $exist_result = mysqli_query($conn, $exist);
+    if (mysqli_num_rows($exist_result) > 0) {
+        $response["success"] = false;
+        $response["msg"] = "Already Reported. Wait For Action!";
+    } else {
+        $sql = "INSERT INTO report(content_id, reported_by,type) VALUES ('$content_id','$reported_by','$type')";
+        if (mysqli_query($conn, $sql)) {
+            $response["success"] = true;
+        } else {
+            $response["success"] = false;
+            $response["msg"] = "Server Error!";
+        }
+    }
+    print_r(json_encode($response, true));
+
+
+}
+
 function createPage()
 {
     require_once("config.php");
@@ -343,25 +540,79 @@ function createPage()
         $fileName = time() . "_" . rand();
         $pic_url = "upload/profile_pic/" . $fileName . ".jpeg";
         $pic = base64_decode($profile_pic);
-        file_put_contents($pic_url,$pic);
-        $sql = "INSERT INTO pages(owner_id, profile_pic, name) VALUES ('$id','$pic_url','$name')";
+        file_put_contents($pic_url, $pic);
+        $s3_url = uploadS3($pic_url, "profile_pic", $fileName);
+        $sql = "INSERT INTO pages(owner_id, profile_pic, name) VALUES ('$id','$s3_url','$name')";
+//         $sql = "INSERT INTO pages(owner_id, profile_pic, name) VALUES ('id','pic_url','name')";
         if (mysqli_query($conn, $sql)) {
-            $user_update="UPDATE users SET page_have=1 WHERE fb_id='$id'";
-            if (mysqli_query($conn, $user_update))
-            {
+            unlink($pic_url);
+            $user_update = "UPDATE users SET page_have=1 WHERE fb_id='$id'";
+            if (mysqli_query($conn, $user_update)) {
                 $response["success"] = true;
-            }
-            else {
+            } else {
                 $response["success"] = false;
             }
         } else {
             $response["success"] = false;
+            $response["msg"] = "Page Creation Failed!";
         }
         print_r(json_encode($response, true));
     }
 
 
 }
+
+function createImageStory()
+{
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+//    checkTokon();
+    $id = $event_json["id"];
+    $url = $event_json["url"];
+
+    if (isset($url) && isset($id)) {
+        $sql = "INSERT INTO image_story(pic_url, uploaded_by) VALUES ('$url','$id')";
+//         $sql = "INSERT INTO pages(owner_id, profile_pic, name) VALUES ('id','pic_url','name')";
+        if (mysqli_query($conn, $sql)) {
+            $response["success"] = true;
+        } else {
+            $response["success"] = false;
+            $response["msg"] = "Story Creation Failed!";
+        }
+        print_r(json_encode($response, true));
+    }
+
+
+}
+
+function getImageStory()
+{
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+//    checkTokon();
+
+
+    $sql = "SELECT * FROM image_story WHERE created BETWEEN DATE_SUB(NOW(), INTERVAL 1 DAY) AND NOW()";
+//         $sql = "INSERT INTO pages(owner_id, profile_pic, name) VALUES ('id','pic_url','name')";
+    $query = mysqli_query($conn, $sql);
+    while ($row = mysqli_fetch_array($query)) {
+        $array_out[] =
+            array(
+                "id" => $row['id'],
+                "pic_url" => $row['pic_url'],
+                "uploaded_by" => $row['uploaded_by'],
+                "created" => $row['created']
+            );
+
+    }
+    $output = array("code" => "200", "msg" => $array_out);
+    print_r(json_encode($output, true));
+
+
+}
+
 function updateBio()
 {
     require_once("config.php");
@@ -382,6 +633,8 @@ function updateBio()
 
 
 }
+
+
 function sendPushNotificationToMobileDevice($data)
 {
     require_once("config.php");
@@ -421,15 +674,34 @@ function sendPushNotificationToMobileDevice($data)
 
 function checkVideoUrl($url)
 {
-    require_once("config.php");
+    try {
+        require_once("config.php");
+        $find = strpos($url, "upload");
+//        if ($find == true) {
+//            return API_path . "/" . $url;
+//        } else {
+        require './vendor/autoload.php';
+        $s3 = new Aws\S3\S3Client([
+            'region' => S3_REGION,
+            'version' => 'latest',
+            'credentials' => [
+                'key' => IAM_KEY,
+                'secret' => IAM_SECRET,
+            ]
+        ]);
+        $cmd = $s3->getCommand('GetObject', [
+            'Bucket' => BUCKET_NAME,
+            'Key' => $url
+        ]);
+        $request = $s3->createPresignedRequest($cmd, '+60 minutes');
 
+        $presignedUrl = (string)$request->getUri();
 
-    $find = strpos($url, 's3.amazonaws');
-    if ($find == true) {
-        return $url;
-    } else {
-        return API_path . "/" . $url;
+        return $presignedUrl;
+    } catch (Exception $e) {
+        return "";
     }
+    // }
 }
 
 function checkexist()
@@ -975,6 +1247,7 @@ function signup()
                         "username" => $rd->username,
                         "bio" => $rd->bio,
                         "page_have" => $rd->page_have,
+                        "id_as_page" => $rd->id_as_page,
                         "gender" => $rd->gender,
                         "tokon" => $dvice_tokon->tokon
                     );
@@ -1152,6 +1425,7 @@ function uploadVideo()
         $sound_id = htmlspecialchars(strip_tags($event_json['sound_id'], ENT_QUOTES));
         $uploadFrom = htmlspecialchars(strip_tags($event_json['uploadFrom'], ENT_QUOTES));
         $url = htmlspecialchars(strip_tags($event_json['url'], ENT_QUOTES));
+        $type = htmlspecialchars(strip_tags($event_json['type'], ENT_QUOTES));
         $thum = $event_json['picbase64']['file_data'];
         $video = $event_json['videobase64']['file_data'];
         $gif = $event_json['gifbase64']['file_data'];
@@ -1189,7 +1463,7 @@ function uploadVideo()
             /*picture resize*/
 
             $filePath = "tmp/" . $fileName . ".jpg";
-            $thum_url = uploadS3($filePath, "thum");
+            $thum_url = uploadS3($filePath, "thum", $fileName);
             unlink($filePath);
 
 
@@ -1199,7 +1473,7 @@ function uploadVideo()
             file_put_contents("tmp/" . $fileName . ".mp4", $video);
 
             $filePath = "tmp/" . $fileName . ".mp4";
-            $video_url = uploadS3($filePath, "videos");
+            $video_url = uploadS3($filePath, "videos", $fileName);
             unlink($filePath);
 
 
@@ -1209,7 +1483,7 @@ function uploadVideo()
             file_put_contents("tmp/" . $fileName . ".gif", $gif);
 
             $filePath = "tmp/" . $fileName . ".gif";
-            $gif_url = uploadS3($filePath, "gif");
+            $gif_url = uploadS3($filePath, "gif", $fileName);
             unlink($filePath);
 
         } else
@@ -1248,7 +1522,7 @@ function uploadVideo()
             }
 
 
-        $qrry_1 = "insert into videos(description,video,sound_id,fb_id,gif,thum,upload_from,url)values(";
+        $qrry_1 = "insert into videos(description,video,sound_id,fb_id,gif,thum,upload_from,type,url)values(";
         $qrry_1 .= "'" . $description . "',";
         $qrry_1 .= "'" . $video_url . "',";
         $qrry_1 .= "'" . $sound_id . "',";
@@ -1256,6 +1530,7 @@ function uploadVideo()
         $qrry_1 .= "'" . $gif_url . "',";
         $qrry_1 .= "'" . $thum_url . "',";
         $qrry_1 .= "'" . $uploadFrom . "',";
+        $qrry_1 .= "'" . $type . "',";
         $qrry_1 .= "'" . $url . "'";
         $qrry_1 .= ")";
         if (mysqli_query($conn, $qrry_1)) {
@@ -1271,7 +1546,7 @@ function uploadVideo()
             $array_out = array();
             $array_out[] =
                 array(
-                    "response" => "error in uploading files"." ".$qrry_1
+                    "response" => "error in uploading files" . " " . $qrry_1
                 );
 
             $output = array("code" => "201", "msg" => $array_out);
@@ -1287,6 +1562,34 @@ function uploadVideo()
 
         $output = array("code" => "201", "msg" => $array_out);
         print_r(json_encode($output, true));
+    }
+}
+
+use Aws\S3\S3Client;
+use Aws\S3\Exception\S3Exception;
+
+function uploadS3($filePath, $fileType, $fileName)
+{
+    require './vendor/autoload.php';
+    $s3 = new Aws\S3\S3Client([
+        'region' => S3_REGION,
+        'version' => 'latest',
+        'credentials' => [
+            'key' => IAM_KEY,
+            'secret' => IAM_SECRET,
+        ]
+    ]);
+    try {
+        $result = $s3->putObject([
+            'Bucket' => BUCKET_NAME,
+            'Key' => $fileType . '/' . $fileName,
+            'SourceFile' => $filePath
+        ]);
+
+        return $fileType . '/' . $fileName;
+    } catch (S3Exception $e) {
+        // Catch an S3 specific exception.
+        return $e->getMessage();
     }
 
 }
@@ -1305,26 +1608,205 @@ function showAllVideos()
         $token = $event_json['token'];
 
         @mysqli_query($conn, "update users set tokon='" . $token . "' where fb_id='" . $fb_id . "' ");
-
+        $type = "record";
 
         if ($event_json['video_id']) {
-            $query = mysqli_query($conn, "select * from videos where id='" . $event_json['video_id'] . "' ");
+            $query = mysqli_query($conn, "select * from videos where id='" . $event_json['video_id'] . "'");
         } else {
-            $query = mysqli_query($conn, "select * from videos order by rand() ");
+            $query = mysqli_query($conn, "select * from videos WHERE type='$type' order by rand()");
         }
-
 
 
         $array_out = array();
         while ($row = mysqli_fetch_array($query)) {
             $query1 = mysqli_query($conn, "select * from users where fb_id='" . $row['fb_id'] . "' ");
-            $page_name=null;
-            $page_pic=null;
-            if ($row['upload_from']=="page") {
-                $page_query=mysqli_query($conn, "select * from pages where owner_id='" . $row['fb_id'] . "' ");
+            $page_name = null;
+            $page_pic = null;
+            $button = null;
+            $category = null;
+            $block = null;
+            $published = null;
+            if ($row['upload_from'] == "page") {
+                $page_query = mysqli_query($conn, "select * from pages where owner_id='" . $row['fb_id'] . "' ");
                 $page_data = mysqli_fetch_object($page_query);
-                $page_name=$page_data->name;
-                $page_pic=$page_data->profile_pic;
+                $page_name = $page_data->name;
+                $page_pic = $page_data->profile_pic;
+                $button = $page_data->button;
+                $category = $page_data->category;
+                $block = $page_data->block;
+                $published = $page_data->published;
+            }
+
+            $rd = mysqli_fetch_object($query1);
+            $followed_fb_id = $row['fb_id'];
+            $isFriend = null;
+            $fb_id = htmlspecialchars(strip_tags($event_json['fb_id'], ENT_QUOTES));
+            $sql = "SELECT * FROM `follow_users` WHERE fb_id='$fb_id' && followed_fb_id='$followed_fb_id'";
+            $result = mysqli_query($conn, $sql);
+            if (mysqli_num_rows($result) > 0) {
+                $isFriend = true;
+
+            } else {
+                $isFriend = false;
+            }
+            $query112 = mysqli_query($conn, "select * from sound where id='" . $row['sound_id'] . "' ");
+            $rd12 = mysqli_fetch_object($query112);
+
+            $countLikes = mysqli_query($conn, "SELECT count(*) as count from video_like_dislike where video_id='" . $row['id'] . "' ");
+            $countLikes_count = mysqli_fetch_assoc($countLikes);
+
+            $countcomment = mysqli_query($conn, "SELECT count(*) as count from video_comment where video_id='" . $row['id'] . "' ");
+            $countcomment_count = mysqli_fetch_assoc($countcomment);
+
+
+            $liked = mysqli_query($conn, "SELECT count(*) as count from video_like_dislike where video_id='" . $row['id'] . "' and fb_id='" . $fb_id . "' ");
+            $liked_count = mysqli_fetch_assoc($liked);
+            if ($row['upload_from'] == "page") {
+                if ($block == 0 && $published == 1) {
+                    $array_out[] =
+                        array(
+                            "id" => $row['id'],
+                            "fb_id" => $row['fb_id'],
+                            "user_info" => array
+                            (
+
+                                "first_name" => $rd->first_name,
+                                "isFriend" => $isFriend,
+                                "account_type" => $rd->account_type,
+                                "message_privacy" => $rd->message_privacy,
+                                "comment_privacy" => $rd->comment_privacy,
+                                "live_privacy" => $rd->live_privacy,
+                                "last_name" => $rd->last_name,
+                                "profile_pic" => $rd->profile_pic,
+                                "verified" => $rd->verified,
+                                "username" => $rd->username,
+                            ),
+                            "count" => array
+                            (
+                                "like_count" => $countLikes_count['count'],
+                                "video_comment_count" => $countcomment_count['count']
+                            ),
+                            "liked" => $liked_count['count'],
+                            "video" => checkVideoUrl($row['video']),
+                            "thum" => checkVideoUrl($row['thum']),
+                            "gif" => checkVideoUrl($row['gif']),
+                            "description" => $row['description'],
+                            "page_name" => $page_name,
+                            "page_pic" => checkVideoUrl($page_pic),
+                            "button" => $button,
+                            "category" => $category,
+                            "upload_from" => $row['upload_from'],
+                            "url" => $row['url'],
+                            "sound" => array
+                            (
+                                "id" => $rd12->id,
+                                "audio_path" =>
+                                    array(
+                                        "mp3" => checkVideoUrl($rd12->file_path),
+                                        "acc" => checkVideoUrl($rd12->file_path)
+                                    ),
+                                "sound_name" => $rd12->sound_name,
+                                "description" => $rd12->description,
+                                "thum" => checkVideoUrl($rd12->thum),
+                                "section" => $rd12->section,
+                                "created" => $rd12->created,
+                            ),
+                            "created" => $row['created']
+                        );
+                }
+            } else {
+                $array_out[] =
+                    array(
+                        "id" => $row['id'],
+                        "fb_id" => $row['fb_id'],
+                        "user_info" => array
+                        (
+
+                            "first_name" => $rd->first_name,
+                            "isFriend" => $isFriend,
+                            "account_type" => $rd->account_type,
+                            "message_privacy" => $rd->message_privacy,
+                            "comment_privacy" => $rd->comment_privacy,
+                            "live_privacy" => $rd->live_privacy,
+                            "last_name" => $rd->last_name,
+                            "profile_pic" => $rd->profile_pic,
+                            "verified" => $rd->verified,
+                            "username" => $rd->username,
+                        ),
+                        "count" => array
+                        (
+                            "like_count" => $countLikes_count['count'],
+                            "video_comment_count" => $countcomment_count['count']
+                        ),
+                        "liked" => $liked_count['count'],
+                        "video" => checkVideoUrl($row['video']),
+                        "thum" => checkVideoUrl($row['thum']),
+                        "gif" => checkVideoUrl($row['gif']),
+                        "description" => $row['description'],
+                        "upload_from" => $row['upload_from'],
+                        "url" => $row['url'],
+                        "sound" => array
+                        (
+                            "id" => $rd12->id,
+                            "audio_path" =>
+                                array(
+                                    "mp3" => checkVideoUrl($rd12->file_path),
+                                    "acc" => checkVideoUrl($rd12->file_path)
+                                ),
+                            "sound_name" => $rd12->sound_name,
+                            "description" => $rd12->description,
+                            "thum" => checkVideoUrl($rd12->thum),
+                            "section" => $rd12->section,
+                            "created" => $rd12->created,
+                        ),
+                        "created" => $row['created']
+                    );
+            }
+
+        }
+        $output = array("code" => "200", "msg" => $array_out);
+        print_r(json_encode($output, true));
+
+    } else {
+        $array_out = array();
+
+        $array_out[] =
+            array(
+                "response" => "Json Parem are missing");
+
+        $output = array("code" => "201", "msg" => $array_out);
+        print_r(json_encode($output, true));
+    }
+}
+
+function showAllStory()
+{
+
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+    //print_r($event_json);
+
+
+    if (isset($event_json['fb_id'])) {
+        $fb_id = htmlspecialchars(strip_tags($event_json['fb_id'], ENT_QUOTES));
+        $token = $event_json['token'];
+
+        @mysqli_query($conn, "update users set tokon='" . $token . "' where fb_id='" . $fb_id . "' ");
+        $type = "story";
+        $query = mysqli_query($conn, "SELECT * FROM videos WHERE created BETWEEN DATE_SUB(NOW(), INTERVAL 1 DAY) AND NOW() AND type='$type'");
+
+
+        $array_out = array();
+        while ($row = mysqli_fetch_array($query)) {
+            $query1 = mysqli_query($conn, "select * from users where fb_id='" . $row['fb_id'] . "' ");
+            $page_name = null;
+            $page_pic = null;
+            if ($row['upload_from'] == "page") {
+                $page_query = mysqli_query($conn, "select * from pages where owner_id='" . $row['fb_id'] . "' ");
+                $page_data = mysqli_fetch_object($page_query);
+                $page_name = $page_data->name;
+                $page_pic = $page_data->profile_pic;
             }
 
 
@@ -1382,7 +1864,7 @@ function showAllVideos()
                     "gif" => checkVideoUrl($row['gif']),
                     "description" => $row['description'],
                     "page_name" => $page_name,
-                    "page_pic" => $page_pic,
+                    "page_pic" => checkVideoUrl($page_pic),
                     "upload_from" => $row['upload_from'],
                     "url" => $row['url'],
                     "sound" => array
@@ -1518,9 +2000,12 @@ function showMyAllVideos()
     $event_json = json_decode($input, true);
     //print_r($event_json);
 
-    if (isset($event_json['fb_id']) && isset($event_json['my_fb_id'])) {
+    if (isset($event_json['fb_id']) && isset($event_json['my_fb_id']) && isset($event_json['f_type'])) {
+        $type = "record";
         $fb_id = htmlspecialchars(strip_tags($event_json['fb_id'], ENT_QUOTES));
         $my_fb_id = htmlspecialchars(strip_tags($event_json['my_fb_id'], ENT_QUOTES));
+        $f_type = htmlspecialchars(strip_tags($event_json['f_type'], ENT_QUOTES));
+        //  $type = htmlspecialchars(strip_tags($event_json['type'], ENT_QUOTES));
         $isFriend = null;
         $sql = "SELECT * FROM `follow_users` WHERE fb_id='$my_fb_id' && followed_fb_id='$fb_id'";
         $result = mysqli_query($conn, $sql);
@@ -1530,11 +2015,10 @@ function showMyAllVideos()
         } else {
             $isFriend = false;
         }
-        $query1 = mysqli_query($conn, "select * from users where fb_id='" . $fb_id . "' ");
+        $query1 = mysqli_query($conn, "select * from users where fb_id='$fb_id'");
         $rd = mysqli_fetch_object($query1);
         if (mysqli_num_rows($query1)) {
-
-            $query = mysqli_query($conn, "select * from videos where fb_id='" . $fb_id . "' order by id DESC");
+            $query = mysqli_query($conn, "select * from videos where fb_id='$fb_id' && type ='$type' && upload_from = '$f_type' order by id DESC");
 
             $array_out_video = array();
             while ($row = mysqli_fetch_array($query)) {
@@ -1763,14 +2247,15 @@ function likeDislikeVideo()
                 $query = mysqli_query($conn, "select * from videos where id='" . $video_id . "' ");
                 $rd1 = mysqli_fetch_object($query);
                 $effected_fb_id = $rd1->fb_id;
-
-                $qrry_2 = "insert into notification(my_fb_id,effected_fb_id,type,value)values(";
-                $qrry_2 .= "'" . $fb_id . "',";
-                $qrry_2 .= "'" . $effected_fb_id . "',";
-                $qrry_2 .= "'video_like',";
-                $qrry_2 .= "'" . $video_id . "'";
-                $qrry_2 .= ")";
-                mysqli_query($conn, $qrry_2);
+                if ($fb_id != $effected_fb_id) {
+                    $qrry_2 = "insert into notification(my_fb_id,effected_fb_id,type,value)values(";
+                    $qrry_2 .= "'" . $fb_id . "',";
+                    $qrry_2 .= "'" . $effected_fb_id . "',";
+                    $qrry_2 .= "'video_like',";
+                    $qrry_2 .= "'" . $video_id . "'";
+                    $qrry_2 .= ")";
+                    mysqli_query($conn, $qrry_2);
+                }
 
                 //push notification
 
@@ -1801,10 +2286,21 @@ function likeDislikeVideo()
                 $notification['notification']['sound'] = "default";
                 $notification['notification']['icon'] = "";
                 $notification['notification']['image'] = "";
-                $notification['notification']['type'] = "";
-                $notification['notification']['data'] = "";
+                $notification['notification']['action_type'] = "video_like";
+                $notification['notification']['videoId'] = $video_id;
+                $notification['notification']['tag'] = $video_id;
 
+
+                $notification['data']['title'] = $title;
+                $notification['data']['body'] = $message;
+                $notification['data']['senderid'] = $fb_id;
+                $notification['data']['videoId'] = $video_id;
+                $notification['data']['receiverid'] = $effected_fb_id;
+                $notification['data']['action_type'] = "video_like";
+                $notification['data']['tag'] = $video_id;
+                $notification['notification']['data'] = "";
                 sendPushNotificationToMobileDevice(json_encode($notification));
+
 
                 //push notification
             } else {
@@ -1917,9 +2413,19 @@ function postComment()
             $notification['notification']['sound'] = "default";
             $notification['notification']['icon'] = "";
             $notification['notification']['image'] = "";
-            $notification['notification']['type'] = "";
-            $notification['notification']['data'] = "";
+            $notification['notification']['action_type'] = "comment";
+            $notification['notification']['videoId'] = $video_id;
+            $notification['notification']['tag'] = $video_id;
 
+
+            $notification['data']['title'] = $title;
+            $notification['data']['body'] = $message;
+            $notification['data']['senderid'] = $fb_id;
+            $notification['data']['videoId'] = $video_id;
+            $notification['data']['receiverid'] = $effected_fb_id;
+            $notification['data']['action_type'] = "comment";
+            $notification['data']['tag'] = $video_id;
+            $notification['notification']['data'] = "";
             sendPushNotificationToMobileDevice(json_encode($notification));
 
             //push notification
@@ -1969,6 +2475,7 @@ function showVideoComments()
             $array_out[] =
                 array(
                     "video_id" => $row['video_id'],
+                    "id" => $row['id'],
                     "fb_id" => $row['fb_id'],
                     "user_info" => array
                     (
@@ -2031,13 +2538,13 @@ function allSounds()
 
                     "audio_path" =>
                         array(
-                            "mp3" => $API_path . "/upload/audio/" . $row1['id'] . ".mp3",
-                            "acc" => $API_path . "/upload/audio/" . $row1['id'] . ".aac"
+                            "mp3" => checkVideoUrl($row1['file_path']),
+                            "acc" => checkVideoUrl($row1['file_path'])
                         ),
                     "sound_name" => $row1['sound_name'],
                     "description" => $row1['description'],
                     "section" => $row1['section'],
-                    "thum" => $API_path . "/" . $row1['thum'],
+                    "thum" => checkVideoUrl($row1['thum']),
                     "created" => $row1['created'],
                     "fav" => $CountFav
                 );
@@ -2166,13 +2673,14 @@ function my_FavSound()
 
                     "audio_path" =>
                         array(
-                            "mp3" => $API_path . "/upload/audio/" . $row1['sound_id'] . ".mp3",
-                            "acc" => $API_path . "/upload/audio/" . $row1['sound_id'] . ".aac"
+
+                            "mp3" => checkVideoUrl("audio/" . $row1['sound_id']),
+                            "acc" => checkVideoUrl("audio/" . $row1['sound_id'])
                         ),
                     "sound_name" => $rd->sound_name,
                     "description" => $rd->description,
                     "section" => $rd->section,
-                    "thum" => $API_path . "/" . $rd->thum,
+                    "thum" => checkVideoUrl($rd->thum),
                     "created" => $rd->created,
                 );
         }
@@ -2257,12 +2765,12 @@ function my_liked_video()
                             "id" => $rd12->id,
                             "audio_path" =>
                                 array(
-                                    "mp3" => $API_path . "/upload/audio/" . @$rd12->id . ".mp3",
-                                    "acc" => $API_path . "/upload/audio/" . @$rd12->id . ".aac"
+                                    "mp3" => checkVideoUrl($rd12->file_path),
+                                    "acc" => checkVideoUrl($rd12->file_path)
                                 ),
                             "sound_name" => @$rd12->sound_name,
                             "description" => @$rd12->description,
-                            "thum" => @$rd12->thum,
+                            "thum" => checkVideoUrl($rd12->thum),
                             "section" => @$rd12->section,
                             "created" => @$rd12->created,
                         ),
@@ -2358,6 +2866,7 @@ function get_followers()
                     "gender" => $rd1->gender,
                     "bio" => $rd1->bio,
                     "page_have" => $rd1->page_have,
+                    "id_as_page" => $rd1->id_as_page,
                     "profile_pic" => $rd1->profile_pic,
                     "created" => $rd1->created,
                     "follow_Status" => array
@@ -2430,6 +2939,7 @@ function get_followings()
                     "gender" => $rd1->gender,
                     "bio" => $rd1->bio,
                     "page_have" => $rd->page_have,
+                    "id_as_page" => $rd->id_as_page,
                     "profile_pic" => $rd1->profile_pic,
                     "created" => $rd1->created,
                     "follow_Status" => array
@@ -2523,12 +3033,12 @@ function discover()
                         "id" => $rd12->id,
                         "audio_path" =>
                             array(
-                                "mp3" => $API_path . "/upload/audio/" . $rd12->id . ".mp3",
-                                "acc" => $API_path . "/upload/audio/" . $rd12->id . ".aac"
+                                "mp3" => checkVideoUrl($rd12->file_path),
+                                "acc" => checkVideoUrl($rd12->file_path)
                             ),
                         "sound_name" => $rd12->sound_name,
                         "description" => $rd12->description,
-                        "thum" => $rd12->thum,
+                        "thum" => checkVideoUrl($rd12->thum),
                         "section" => $rd12->section,
                         "created" => $rd12->created,
                     ),
@@ -2557,30 +3067,34 @@ function all_discovery_sections()
     $input = @file_get_contents("php://input");
     $event_json = json_decode($input, true);
     //print_r($event_json);
+    if (checkAdminToken()) {
+        $id = htmlspecialchars(strip_tags($event_json['id'], ENT_QUOTES));
 
-    $id = htmlspecialchars(strip_tags($event_json['id'], ENT_QUOTES));
+        if ($id != "") {
+            $query = mysqli_query($conn, "select * from discover_section where id='" . $id . "' ");
+        } else {
+            $query = mysqli_query($conn, "select * from discover_section ");
+        }
 
-    if ($id != "") {
-        $query = mysqli_query($conn, "select * from discover_section where id='" . $id . "' ");
+
+        $array_out = array();
+        while ($row = mysqli_fetch_array($query)) {
+
+            //echo $row['section'];
+            //echo "select * from sound where section ='".$row['section']."' ";
+            $array_out1[] =
+                array(
+                    "id" => $row['id'],
+                    "section_name" => $row['section_name'],
+                    "created" => $row['created']
+                );
+        }
+        $output = array("code" => "200", "msg" => $array_out1);
+        print_r(json_encode($output, true));
     } else {
-        $query = mysqli_query($conn, "select * from discover_section ");
+        $output = array("code" => "500", "msg" => "Token Expired/Invalid");
+        print_r(json_encode($output, true));
     }
-
-
-    $array_out = array();
-    while ($row = mysqli_fetch_array($query)) {
-
-        //echo $row['section'];
-        //echo "select * from sound where section ='".$row['section']."' ";
-        $array_out1[] =
-            array(
-                "id" => $row['id'],
-                "section_name" => $row['section_name'],
-                "created" => $row['created']
-            );
-    }
-    $output = array("code" => "200", "msg" => $array_out1);
-    print_r(json_encode($output, true));
 
 // 		$query=mysqli_query($conn,"select DISTINCT section from videos where section!='0' ");
 
@@ -2605,15 +3119,18 @@ function discovery_sections_edit()
     $input = @file_get_contents("php://input");
     $event_json = json_decode($input, true);
     //print_r($event_json);
+    if (checkAdminToken()) {
+        $section_name = $event_json['section_name'];
+        $id = $event_json['id'];
 
-    $section_name = $event_json['section_name'];
-    $id = $event_json['id'];
+        @mysqli_query($conn, "update discover_section set section_name = '" . $section_name . "' where id='" . $id . "'");
 
-    @mysqli_query($conn, "update discover_section set section_name = '" . $section_name . "' where id='" . $id . "'");
-
-    $output = array("code" => "200", "msg" => "updated");
-    print_r(json_encode($output, true));
-
+        $output = array("code" => "200", "msg" => "updated");
+        print_r(json_encode($output, true));
+    } else {
+        $output = array("code" => "500", "msg" => "Token Expired/Invalid");
+        print_r(json_encode($output, true));
+    }
 
 }
 
@@ -2623,31 +3140,36 @@ function add_discovery_Section()
     $input = @file_get_contents("php://input");
     $event_json = json_decode($input, true);
     //print_r($event_json);
-    $section_name = htmlspecialchars(strip_tags($event_json['section_name'], ENT_QUOTES));
+    if (checkAdminToken()) {
+        $section_name = htmlspecialchars(strip_tags($event_json['section_name'], ENT_QUOTES));
 
-    $qrry_1 = "insert into discover_section(section_name)values(";
-    $qrry_1 .= "'" . $section_name . "'";
-    $qrry_1 .= ")";
-    if (mysqli_query($conn, $qrry_1)) {
+        $qrry_1 = "insert into discover_section(section_name)values(";
+        $qrry_1 .= "'" . $section_name . "'";
+        $qrry_1 .= ")";
+        if (mysqli_query($conn, $qrry_1)) {
 
 
-        $array_out = array();
-        $array_out[] =
-            //array("code" => "200");
-            array(
-                "response" => "follow successful");
+            $array_out = array();
+            $array_out[] =
+                //array("code" => "200");
+                array(
+                    "response" => "follow successful");
 
-        $output = array("code" => "200", "msg" => $array_out);
-        print_r(json_encode($output, true));
+            $output = array("code" => "200", "msg" => $array_out);
+            print_r(json_encode($output, true));
+        } else {
+            //echo mysqli_error();
+            $array_out = array();
+
+            $array_out[] =
+                array(
+                    "response" => "problem in signup");
+
+            $output = array("code" => "201", "msg" => $array_out);
+            print_r(json_encode($output, true));
+        }
     } else {
-        //echo mysqli_error();
-        $array_out = array();
-
-        $array_out[] =
-            array(
-                "response" => "problem in signup");
-
-        $output = array("code" => "201", "msg" => $array_out);
+        $output = array("code" => "500", "msg" => "Token Expired/Invalid");
         print_r(json_encode($output, true));
     }
 }
@@ -2659,33 +3181,34 @@ function delete_discovery_Section()
     $event_json = json_decode($input, true);
     //print_r($event_json);
 
-    if (STATUS == "demo") {
-        die();
-    }
+    if (checkAdminToken()) {
+        $id = htmlspecialchars(strip_tags($event_json['id'], ENT_QUOTES));
 
-    $id = htmlspecialchars(strip_tags($event_json['id'], ENT_QUOTES));
+        mysqli_query($conn, "update videos set section='' where section ='" . $id . "'  ");
+        $qrry_1 = mysqli_query($conn, "Delete from discover_section where id ='" . $id . "'  ");
+        if ($qrry_1) {
 
-    mysqli_query($conn, "update videos set section='' where section ='" . $id . "'  ");
-    $qrry_1 = mysqli_query($conn, "Delete from discover_section where id ='" . $id . "'  ");
-    if ($qrry_1) {
+            $array_out = array();
+            $array_out[] =
+                //array("code" => "200");
+                array(
+                    "response" => "follow successful");
 
-        $array_out = array();
-        $array_out[] =
-            //array("code" => "200");
-            array(
-                "response" => "follow successful");
+            $output = array("code" => "200", "msg" => $array_out);
+            print_r(json_encode($output, true));
+        } else {
+            //echo mysqli_error();
+            $array_out = array();
 
-        $output = array("code" => "200", "msg" => $array_out);
-        print_r(json_encode($output, true));
+            $array_out[] =
+                array(
+                    "response" => "problem in signup");
+
+            $output = array("code" => "201", "msg" => $array_out);
+            print_r(json_encode($output, true));
+        }
     } else {
-        //echo mysqli_error();
-        $array_out = array();
-
-        $array_out[] =
-            array(
-                "response" => "problem in signup");
-
-        $output = array("code" => "201", "msg" => $array_out);
+        $output = array("code" => "500", "msg" => "Token Expired/Invalid");
         print_r(json_encode($output, true));
     }
 }
@@ -2921,6 +3444,36 @@ function follow_users()
                 $qrry_2 .= "''";
                 $qrry_2 .= ")";
                 mysqli_query($conn, $qrry_2);
+                $query1 = mysqli_query($conn, "select * from users where fb_id='" . $fb_id . "' ");
+                $rd = mysqli_fetch_object($query1);
+
+                $query11 = mysqli_query($conn, "select * from users where fb_id='" . $followed_fb_id . "' ");
+                $rd1 = mysqli_fetch_object($query11);
+
+                $title = "You Go Follower";
+                $message = $rd->first_name . " Followed Your";
+
+                $notification['to'] = $rd1->tokon;
+                $notification['notification']['title'] = $title;
+                $notification['notification']['body'] = $message;
+                // $notification['notification']['text'] = $sender_details['User']['username'].' has sent you a friend request';
+                $notification['notification']['badge'] = "1";
+                $notification['notification']['sound'] = "default";
+                $notification['notification']['icon'] = "";
+                $notification['notification']['image'] = "";
+                $notification['notification']['action_type'] = "follow";
+                $notification['notification']['tag'] = $fb_id;
+
+
+                $notification['data']['title'] = $title;
+                $notification['data']['body'] = $message;
+                $notification['data']['senderid'] = $fb_id;
+                $notification['data']['receiverid'] = $followed_fb_id;
+                $notification['data']['action_type'] = "follow";
+                $notification['data']['tag'] = $fb_id;
+                $notification['notification']['data'] = "";
+                sendPushNotificationToMobileDevice(json_encode($notification));
+
             } else {
                 //echo mysqli_error();
                 $array_out = array();
@@ -2967,14 +3520,18 @@ function Admin_Login()
         $log_in_rs = mysqli_query($conn, $log_in);
 
         if (mysqli_num_rows($log_in_rs)) {
-            $array_out = array();
-            $array_out[] =
-                //array("code" => "200");
-                array(
-                    "response" => "login success"
-                );
-
-            $output = array("code" => "200", "msg" => $array_out);
+            $admin = mysqli_fetch_assoc($log_in_rs);
+            $key = "buggee_jwt_key";
+            $time = time();
+            $payload = array(
+                "iss" => "buggeeapp",
+                "aud" => "admin",
+                "iat" => $time,
+                "nbf" => $time,
+                "exp" => $time + 3600
+            );
+            $jwt = JWT::encode($payload, $key, "HS512");
+            $output = array("code" => "200", "token" => $jwt);
             print_r(json_encode($output, true));
         } else {
 
@@ -3008,36 +3565,42 @@ function All_Users()
     require_once("config.php");
     $input = @file_get_contents("php://input");
     $event_json = json_decode($input, true);
-    $query = mysqli_query($conn, "select * from users order by id DESC");
-    $array_out = array();
-    while ($row = mysqli_fetch_array($query)) {
+    if (checkAdminToken()) {
+        $query = mysqli_query($conn, "select * from users order by id DESC");
+        $array_out = array();
+        while ($row = mysqli_fetch_array($query)) {
 
-        $array_out[] =
-            array(
-                "fb_id" => $row['fb_id'],
-                "username" => utf8_encode($row['username']),
-                "first_name" => utf8_encode($row['first_name']),
-                "last_name" => utf8_encode($row['last_name']),
-                "gender" => $row['gender'],
-                "profile_pic" => $row['profile_pic'],
-                "block" => $row['block'],
-                "version" => $row['version'],
-                "device" => $row['device'],
-                "signup_type" => $row['signup_type'],
-                "dob" => $row['dob'],
-                "account_type" => $row['account_type'],
-                "message_privacy" => $row['message_privacy'],
-                "comment_privacy" => $row['comment_privacy'],
-                "live_privacy" => $row['live_privacy'],
-                "verified" => $row['verified'],
-                "page_have" => $row['page_have'],
-                "created" => $row['created'],
+            $array_out[] =
+                array(
+                    "fb_id" => $row['fb_id'],
+                    "username" => utf8_encode($row['username']),
+                    "first_name" => utf8_encode($row['first_name']),
+                    "last_name" => utf8_encode($row['last_name']),
+                    "gender" => $row['gender'],
+                    "profile_pic" => $row['profile_pic'],
+                    "block" => $row['block'],
+                    "version" => $row['version'],
+                    "device" => $row['device'],
+                    "signup_type" => $row['signup_type'],
+                    "dob" => $row['dob'],
+                    "account_type" => $row['account_type'],
+                    "message_privacy" => $row['message_privacy'],
+                    "comment_privacy" => $row['comment_privacy'],
+                    "live_privacy" => $row['live_privacy'],
+                    "verified" => $row['verified'],
+                    "page_have" => $row['page_have'],
+                    "id_as_page" => $row['id_as_page'],
+                    "created" => $row['created'],
 
-            );
+                );
 
+        }
+        $output = array("code" => "200", "msg" => $array_out);
+        print_r(json_encode($output, true));
+    } else {
+        $output = array("code" => "500", "msg" => "Token Expired/Invalid");
+        print_r(json_encode($output, true));
     }
-    $output = array("code" => "200", "msg" => $array_out);
-    print_r(json_encode($output, true));
 
 
 }
@@ -3049,27 +3612,30 @@ function admin_all_sounds()
     require_once("config.php");
     $input = @file_get_contents("php://input");
     $event_json = json_decode($input, true);
+    if (checkAdminToken()) {
+        $query = mysqli_query($conn, "select * from sound order by id DESC");
 
-    $query = mysqli_query($conn, "select * from sound order by id DESC");
+        $array_out = array();
+        while ($row = mysqli_fetch_array($query)) {
 
-    $array_out = array();
-    while ($row = mysqli_fetch_array($query)) {
+            $array_out[] =
+                array(
+                    "id" => $row['id'],
+                    "sound_name" => $row['sound_name'],
+                    "description" => $row['description'],
+                    "thum" => checkVideoUrl($row['thum']),
+                    "section" => $row['section'],
+                    "created" => $row['created']
 
-        $array_out[] =
-            array(
-                "id" => $row['id'],
-                "sound_name" => $row['sound_name'],
-                "description" => $row['description'],
-                "thum" => $API_path . "/" . $row['thum'],
-                "section" => $row['section'],
-                "created" => $row['created']
+                );
 
-            );
-
+        }
+        $output = array("code" => "200", "msg" => $array_out);
+        print_r(json_encode($output, true));
+    } else {
+        $output = array("code" => "500", "msg" => "Token Expired/Invalid");
+        print_r(json_encode($output, true));
     }
-    $output = array("code" => "200", "msg" => $array_out);
-    print_r(json_encode($output, true));
-
 
 }
 
@@ -3080,60 +3646,72 @@ function admin_uploadSound()
     $event_json = json_decode($input, true);
     //print_r($event_json);
     //0= owner  1= company 2= ind mechanic
-    $fileUrl = $event_json['fileUrl'];
-    if (isset($fileUrl)) {
+    if (checkAdminToken()) {
+        $fileUrl = $event_json['fileUrl'];
+        if (isset($fileUrl)) {
 
-        $sound_name = htmlspecialchars(strip_tags($event_json['sound_name'], ENT_QUOTES));
-        $description = htmlspecialchars(strip_tags($event_json['description'], ENT_QUOTES));
-        $section_id = htmlspecialchars(strip_tags($event_json['section_id'], ENT_QUOTES));
-        $thum = $event_json["thum"];
-        $fileName = rand();
+            $sound_name = htmlspecialchars(strip_tags($event_json['sound_name'], ENT_QUOTES));
+            $description = htmlspecialchars(strip_tags($event_json['description'], ENT_QUOTES));
+            $section_id = htmlspecialchars(strip_tags($event_json['section_id'], ENT_QUOTES));
+            $thum = $event_json["thum"];
+            $fileName = rand();
 
-        $thumPath = "upload/audio/" . $fileName . ".jpg";
+            $thumPath = "upload/audio/" . $fileName . ".jpg";
 
-        $qrry_1 = "insert into sound(sound_name,description,section,thum)values(";
-        $qrry_1 .= "'" . $sound_name . "',";
-        $qrry_1 .= "'" . $description . "',";
-        $qrry_1 .= "'" . $section_id . "',";
-        $qrry_1 .= "'" . $thumPath . "'";
-        $qrry_1 .= ")";
-        if (mysqli_query($conn, $qrry_1)) {
-            $insert_id = mysqli_insert_id($conn);
 
-            $thum = base64_decode($thum);
-            $fileUrl=base64_decode($fileUrl);
-            file_put_contents("upload/audio/" . $fileName . ".jpg", $thum);
-            file_put_contents('upload/audio/' . $insert_id . '.aac', $fileUrl);
+            $qrry_1 = "insert into sound(sound_name,description,section,thum)values(";
+            $qrry_1 .= "'" . $sound_name . "',";
+            $qrry_1 .= "'" . $description . "',";
+            $qrry_1 .= "'" . $section_id . "',";
+            $qrry_1 .= "'" . $thumPath . "'";
+            $qrry_1 .= ")";
+            if (mysqli_query($conn, $qrry_1)) {
+                $insert_id = mysqli_insert_id($conn);
+                $thum = base64_decode($thum);
+                $fileUrl = base64_decode($fileUrl);
+                $thum_path = "upload/audio/" . $fileName . ".jpg";
+                $audio_path = "upload/audio/' . $insert_id . '.aac";
+                file_put_contents($thum_path, $thum);
+                file_put_contents($audio_path, $fileUrl);
+                $thumS3 = uploadS3($thum_path, "thum", $fileName);
+                $audioS3 = uploadS3($audio_path, "audio", $insert_id);
+                unlink($thum_path);
+                unlink($audio_path);
+                $sql = "UPDATE sound SET thum='$thumS3',file_path='$audioS3' WHERE id='$insert_id'";
+                mysqli_query($conn, $sql);
+                $array_out = array();
+                $array_out[] =
+                    //array("code" => "200");
+                    array(
+                        "response" => "successful");
 
-            $array_out = array();
-            $array_out[] =
-                //array("code" => "200");
-                array(
-                    "response" => "successful");
+                $output = array("code" => "200", "msg" => $array_out);
+                print_r(json_encode($output, true));
+            } else {
+                //echo mysqli_error();
+                $array_out = array();
 
-            $output = array("code" => "200", "msg" => $array_out);
-            print_r(json_encode($output, true));
+                $array_out[] =
+                    array(
+                        "response" => "problem in signup");
+
+                $output = array("code" => "201", "msg" => $array_out);
+                print_r(json_encode($output, true));
+            }
+
+
         } else {
-            //echo mysqli_error();
             $array_out = array();
 
             $array_out[] =
                 array(
-                    "response" => "problem in signup");
+                    "response" => "Json Parem are missing");
 
             $output = array("code" => "201", "msg" => $array_out);
             print_r(json_encode($output, true));
         }
-
-
     } else {
-        $array_out = array();
-
-        $array_out[] =
-            array(
-                "response" => "Json Parem are missing");
-
-        $output = array("code" => "201", "msg" => $array_out);
+        $output = array("code" => "500", "msg" => "Token Expired/Invalid");
         print_r(json_encode($output, true));
     }
 }
@@ -3144,22 +3722,26 @@ function admin_getSoundSection()
     require_once("config.php");
     $input = @file_get_contents("php://input");
     $event_json = json_decode($input, true);
+    if (checkAdminToken()) {
+        $query = mysqli_query($conn, "select * from sound_section");
 
-    $query = mysqli_query($conn, "select * from sound_section");
+        $array_out = array();
+        while ($row = mysqli_fetch_array($query)) {
 
-    $array_out = array();
-    while ($row = mysqli_fetch_array($query)) {
+            $array_out[] =
+                array(
+                    "id" => $row['id'],
+                    "section_name" => $row['section_name'],
+                    "created" => $row['created']
+                );
 
-        $array_out[] =
-            array(
-                "id" => $row['id'],
-                "section_name" => $row['section_name'],
-                "created" => $row['created']
-            );
-
+        }
+        $output = array("code" => "200", "msg" => $array_out);
+        print_r(json_encode($output, true));
+    } else {
+        $output = array("code" => "500", "msg" => "Token Expired/Invalid");
+        print_r(json_encode($output, true));
     }
-    $output = array("code" => "200", "msg" => $array_out);
-    print_r(json_encode($output, true));
 }
 
 
@@ -3169,69 +3751,73 @@ function admin_show_allVideos()
     $input = @file_get_contents("php://input");
     $event_json = json_decode($input, true);
     //print_r($event_json);
+    if (checkAdminToken()) {
+        $query = mysqli_query($conn, "select * from videos order by id DESC");
 
-    $query = mysqli_query($conn, "select * from videos order by id DESC");
+        $array_out = array();
+        while ($row = mysqli_fetch_array($query)) {
 
-    $array_out = array();
-    while ($row = mysqli_fetch_array($query)) {
+            $query1 = mysqli_query($conn, "select * from users where fb_id='" . $row['fb_id'] . "' ");
+            $rd = mysqli_fetch_object($query1);
 
-        $query1 = mysqli_query($conn, "select * from users where fb_id='" . $row['fb_id'] . "' ");
-        $rd = mysqli_fetch_object($query1);
+            $query112 = mysqli_query($conn, "select * from sound where id='" . $row['sound_id'] . "' ");
+            $rd12 = mysqli_fetch_object($query112);
 
-        $query112 = mysqli_query($conn, "select * from sound where id='" . $row['sound_id'] . "' ");
-        $rd12 = mysqli_fetch_object($query112);
+            $countLikes = mysqli_query($conn, "SELECT count(*) as count from video_like_dislike where video_id='" . $row['id'] . "' ");
+            $countLikes_count = mysqli_fetch_assoc($countLikes);
 
-        $countLikes = mysqli_query($conn, "SELECT count(*) as count from video_like_dislike where video_id='" . $row['id'] . "' ");
-        $countLikes_count = mysqli_fetch_assoc($countLikes);
-
-        $countcomment = mysqli_query($conn, "SELECT count(*) as count from video_comment where video_id='" . $row['id'] . "' ");
-        $countcomment_count = mysqli_fetch_assoc($countcomment);
+            $countcomment = mysqli_query($conn, "SELECT count(*) as count from video_comment where video_id='" . $row['id'] . "' ");
+            $countcomment_count = mysqli_fetch_assoc($countcomment);
 
 
-        $liked = mysqli_query($conn, "SELECT count(*) as count from video_like_dislike where video_id='" . $row['id'] . "' and fb_id='" . $row['fb_id'] . "' ");
-        $liked_count = mysqli_fetch_assoc($liked);
+            $liked = mysqli_query($conn, "SELECT count(*) as count from video_like_dislike where video_id='" . $row['id'] . "' and fb_id='" . $row['fb_id'] . "' ");
+            $liked_count = mysqli_fetch_assoc($liked);
 
-        $array_out[] =
-            array(
-                "id" => $row['id'],
-                "fb_id" => $row['fb_id'],
-                "user_info" => array
-                (
-                    "first_name" => $rd->first_name,
-                    "username" => $rd->username,
-                    "last_name" => $rd->last_name,
-                    "profile_pic" => $rd->profile_pic
-                ),
-                "count" => array
-                (
-                    "like_count" => $countLikes_count['count'],
-                    "video_comment_count" => $countcomment_count['count']
-                ),
-                "liked" => $liked_count['count'],
-                "video" => checkVideoUrl($row['video']),
-                "thum" => checkVideoUrl($row['thum']),
-                "gif" => checkVideoUrl($row['gif']),
-                "section" => $row['section'],
-                "sound" => array
-                (
-                    "id" => $rd12->id,
-                    "audio_path" =>
-                        array(
-                            "mp3" => $API_path . "/upload/audio/" . $rd12->id . ".mp3",
-                            "acc" => $API_path . "/upload/audio/" . $rd12->id . ".aac"
-                        ),
-                    "sound_name" => $rd12->sound_name,
-                    "description" => $rd12->description,
-                    "thum" => $rd12->thum,
-                    "section" => $rd12->section,
-                    "created" => $rd12->created,
-                ),
-                "created" => $row['created']
-            );
+            $array_out[] =
+                array(
+                    "id" => $row['id'],
+                    "fb_id" => $row['fb_id'],
+                    "user_info" => array
+                    (
+                        "first_name" => $rd->first_name,
+                        "username" => $rd->username,
+                        "last_name" => $rd->last_name,
+                        "profile_pic" => $rd->profile_pic
+                    ),
+                    "count" => array
+                    (
+                        "like_count" => $countLikes_count['count'],
+                        "video_comment_count" => $countcomment_count['count']
+                    ),
+                    "liked" => $liked_count['count'],
+                    "video" => checkVideoUrl($row['video']),
+                    "thum" => checkVideoUrl($row['thum']),
+                    "gif" => checkVideoUrl($row['gif']),
+                    "section" => $row['section'],
+                    "sound" => array
+                    (
+                        "id" => $rd12->id,
+                        "audio_path" =>
+                            array(
+                                "mp3" => $API_path . "/upload/audio/" . $rd12->id . ".mp3",
+                                "acc" => $API_path . "/upload/audio/" . $rd12->id . ".aac"
+                            ),
+                        "sound_name" => $rd12->sound_name,
+                        "description" => $rd12->description,
+                        "thum" => $rd12->thum,
+                        "section" => $rd12->section,
+                        "created" => $rd12->created,
+                    ),
+                    "created" => $row['created']
+                );
 
+        }
+        $output = array("code" => "200", "msg" => $array_out);
+        print_r(json_encode($output, true));
+    } else {
+        $output = array("code" => "500", "msg" => "Token Expired/Invalid");
+        print_r(json_encode($output, true));
     }
-    $output = array("code" => "200", "msg" => $array_out);
-    print_r(json_encode($output, true));
 }
 
 
@@ -3242,7 +3828,7 @@ function get_user_data()
     $input = @file_get_contents("php://input");
     $event_json = json_decode($input, true);
     //print_r($event_json);
-
+//    if (checkAdminToken()) {
     $fb_id = htmlspecialchars(strip_tags($event_json['fb_id'], ENT_QUOTES));
     $query = mysqli_query($conn, "select * from users where fb_id='" . $fb_id . "' ");
 
@@ -3259,6 +3845,7 @@ function get_user_data()
                 "gender" => $row['gender'],
                 "bio" => $row['bio'],
                 "page_have" => $row['page_have'],
+                "id_as_page" => $row['id_as_page'],
                 "profile_pic" => $row['profile_pic'],
                 "created" => $row['created']
             );
@@ -3266,6 +3853,11 @@ function get_user_data()
     }
     $output = array("code" => "200", "msg" => $array_out);
     print_r(json_encode($output, true));
+//    } else {
+//        $output = array("code" => "500", "msg" => "Token Expired/Invalid");
+//        print_r(json_encode($output, true));
+//    }
+
 }
 
 function adminChangePassword()
@@ -3276,30 +3868,40 @@ function adminChangePassword()
     $event_json = json_decode($input, true);
 
     //print_r($event_json);
+    if (checkAdminToken()) {
+        if (isset($event_json['new_password']) && isset($event_json['old_password'])) {
+            $old_password = strip_tags($event_json['old_password']);
+            $new_password = strip_tags($event_json['new_password']);
 
-    if (isset($event_json['new_password']) && isset($event_json['old_password'])) {
-        $old_password = strip_tags($event_json['old_password']);
-        $new_password = strip_tags($event_json['new_password']);
+            if (STATUS == "demo") {
+                die();
+            }
 
-        if (STATUS == "demo") {
-            die();
-        }
+            $qrry_1 = "select * from admin where pass ='" . md5($old_password) . "' ";
+            $log_in_rs = mysqli_query($conn, $qrry_1);
+            $rd = mysqli_fetch_object($log_in_rs);
 
-        $qrry_1 = "select * from admin where pass ='" . md5($old_password) . "' ";
-        $log_in_rs = mysqli_query($conn, $qrry_1);
-        $rd = mysqli_fetch_object($log_in_rs);
+            if ($rd->id != "") {
+                $qrry_1 = "update admin SET pass ='" . md5($new_password) . "' where id='" . $rd->id . "'  ";
+                if (mysqli_query($conn, $qrry_1)) {
+                    $array_out = array();
 
-        if ($rd->id != "") {
-            $qrry_1 = "update admin SET pass ='" . md5($new_password) . "' where id='" . $rd->id . "'  ";
-            if (mysqli_query($conn, $qrry_1)) {
-                $array_out = array();
+                    $array_out[] =
+                        array(
+                            "response" => "success");
 
-                $array_out[] =
-                    array(
-                        "response" => "success");
+                    $output = array("code" => "200", "msg" => $array_out);
+                    print_r(json_encode($output, true));
+                } else {
+                    $array_out = array();
 
-                $output = array("code" => "200", "msg" => $array_out);
-                print_r(json_encode($output, true));
+                    $array_out[] =
+                        array(
+                            "response" => "problem in updating");
+
+                    $output = array("code" => "201", "msg" => $array_out);
+                    print_r(json_encode($output, true));
+                }
             } else {
                 $array_out = array();
 
@@ -3310,26 +3912,20 @@ function adminChangePassword()
                 $output = array("code" => "201", "msg" => $array_out);
                 print_r(json_encode($output, true));
             }
+
+
         } else {
             $array_out = array();
 
             $array_out[] =
                 array(
-                    "response" => "problem in updating");
+                    "response" => "Json Parem are missing");
 
             $output = array("code" => "201", "msg" => $array_out);
             print_r(json_encode($output, true));
         }
-
-
     } else {
-        $array_out = array();
-
-        $array_out[] =
-            array(
-                "response" => "Json Parem are missing");
-
-        $output = array("code" => "201", "msg" => $array_out);
+        $output = array("code" => "500", "msg" => "Token Expired/Invalid");
         print_r(json_encode($output, true));
     }
 
@@ -3342,31 +3938,35 @@ function DeleteSound()
     $input = @file_get_contents("php://input");
     $event_json = json_decode($input, true);
     //print_r($event_json);
+    if (checkAdminToken()) {
+        if (isset($event_json['id'])) {
+            $id = htmlspecialchars(strip_tags($event_json['id'], ENT_QUOTES));
 
-    if (isset($event_json['id'])) {
-        $id = htmlspecialchars(strip_tags($event_json['id'], ENT_QUOTES));
+            mysqli_query($conn, "Delete from sound where id ='" . $id . "' ");
+            mysqli_query($conn, "Delete from fav_sound where sound_id ='" . $id . "' ");
+            mysqli_query($conn, "update videos set sound_id='0' where sound_id ='" . $id . "' ");
 
-        mysqli_query($conn, "Delete from sound where id ='" . $id . "' ");
-        mysqli_query($conn, "Delete from fav_sound where sound_id ='" . $id . "' ");
-        mysqli_query($conn, "update videos set sound_id='0' where sound_id ='" . $id . "' ");
+            $array_out = array();
 
-        $array_out = array();
+            $array_out[] =
+                array(
+                    "response" => "video unlike");
 
-        $array_out[] =
-            array(
-                "response" => "video unlike");
+            $output = array("code" => "200", "msg" => $array_out);
+            print_r(json_encode($output, true));
 
-        $output = array("code" => "200", "msg" => $array_out);
-        print_r(json_encode($output, true));
+        } else {
+            $array_out = array();
+            $array_out[] =
+                array(
+                    "response" => "json parem missing"
+                );
 
+            $output = array("code" => "201", "msg" => $array_out);
+            print_r(json_encode($output, true));
+        }
     } else {
-        $array_out = array();
-        $array_out[] =
-            array(
-                "response" => "json parem missing"
-            );
-
-        $output = array("code" => "201", "msg" => $array_out);
+        $output = array("code" => "500", "msg" => "Token Expired/Invalid");
         print_r(json_encode($output, true));
     }
 }
@@ -3377,45 +3977,49 @@ function DeleteVideo()
     $input = @file_get_contents("php://input");
     $event_json = json_decode($input, true);
     //print_r($event_json);
+    if (checkAdminToken()) {
+        if (isset($event_json['id'])) {
+            $id = htmlspecialchars(strip_tags($event_json['id'], ENT_QUOTES));
 
-    if (isset($event_json['id'])) {
-        $id = htmlspecialchars(strip_tags($event_json['id'], ENT_QUOTES));
+            $qrry_1 = "select * from videos where id ='" . $id . "' ";
+            $log_in_rs = mysqli_query($conn, $qrry_1);
+            $rd = mysqli_fetch_object($log_in_rs);
 
-        $qrry_1 = "select * from videos where id ='" . $id . "' ";
-        $log_in_rs = mysqli_query($conn, $qrry_1);
-        $rd = mysqli_fetch_object($log_in_rs);
+            $videoPath = $rd->video;
+            $thumPath = $rd->thum;
+            $gifPath = $rd->gif;
 
-        $videoPath = $rd->video;
-        $thumPath = $rd->thum;
-        $gifPath = $rd->gif;
-
-        @unlink($videoPath);
-        @unlink($thumPath);
-        @unlink($gifPath);
-
-
-        mysqli_query($conn, "Delete from videos where id ='" . $id . "' ");
-        mysqli_query($conn, "Delete from video_like_dislike where video_id ='" . $id . "' ");
-        mysqli_query($conn, "Delete from video_comment where video_id ='" . $id . "' ");
+            @unlink($videoPath);
+            @unlink($thumPath);
+            @unlink($gifPath);
 
 
-        $array_out = array();
+            mysqli_query($conn, "Delete from videos where id ='" . $id . "' ");
+            mysqli_query($conn, "Delete from video_like_dislike where video_id ='" . $id . "' ");
+            mysqli_query($conn, "Delete from video_comment where video_id ='" . $id . "' ");
 
-        $array_out[] =
-            array(
-                "response" => "video unlike");
 
-        $output = array("code" => "200", "msg" => $array_out);
-        print_r(json_encode($output, true));
+            $array_out = array();
 
+            $array_out[] =
+                array(
+                    "response" => "video unlike");
+
+            $output = array("code" => "200", "msg" => $array_out);
+            print_r(json_encode($output, true));
+
+        } else {
+            $array_out = array();
+            $array_out[] =
+                array(
+                    "response" => "json parem missing"
+                );
+
+            $output = array("code" => "201", "msg" => $array_out);
+            print_r(json_encode($output, true));
+        }
     } else {
-        $array_out = array();
-        $array_out[] =
-            array(
-                "response" => "json parem missing"
-            );
-
-        $output = array("code" => "201", "msg" => $array_out);
+        $output = array("code" => "500", "msg" => "Token Expired/Invalid");
         print_r(json_encode($output, true));
     }
 }
@@ -3426,43 +4030,47 @@ function admin_addSection()
     $input = @file_get_contents("php://input");
     $event_json = json_decode($input, true);
     //print_r($event_json['name']);
+    if (checkAdminToken()) {
+        $name = $event_json['name'];
+        if (isset($name)) {
+            $qrry_1 = "insert into sound_section(section_name)values(";
+            $qrry_1 .= "'" . $name . "'";
+            $qrry_1 .= ")";
+            if (mysqli_query($conn, $qrry_1)) {
+                $array_out = array();
+                $array_out[] =
+                    array(
+                        "response" => "success"
+                    );
 
-    $name = $event_json['name'];
-    if (isset($name)) {
-        $qrry_1 = "insert into sound_section(section_name)values(";
-        $qrry_1 .= "'" . $name . "'";
-        $qrry_1 .= ")";
-        if (mysqli_query($conn, $qrry_1)) {
-            $array_out = array();
-            $array_out[] =
-                array(
-                    "response" => "success"
-                );
+                $output = array("code" => "200", "msg" => $array_out);
+                print_r(json_encode($output, true));
 
-            $output = array("code" => "200", "msg" => $array_out);
-            print_r(json_encode($output, true));
 
+            } else {
+
+                $array_out = array();
+                $array_out[] =
+                    array(
+                        "response" => "error"
+                    );
+
+                $output = array("code" => "201", "msg" => $array_out);
+                print_r(json_encode($output, true));
+            }
 
         } else {
-
             $array_out = array();
             $array_out[] =
                 array(
-                    "response" => "error"
+                    "response" => "json parem missing"
                 );
 
             $output = array("code" => "201", "msg" => $array_out);
             print_r(json_encode($output, true));
         }
-
     } else {
-        $array_out = array();
-        $array_out[] =
-            array(
-                "response" => "json parem missing"
-            );
-
-        $output = array("code" => "201", "msg" => $array_out);
+        $output = array("code" => "500", "msg" => "Token Expired/Invalid");
         print_r(json_encode($output, true));
     }
 }
@@ -3473,30 +4081,34 @@ function DeleteSoundSection()
     $input = @file_get_contents("php://input");
     $event_json = json_decode($input, true);
     //print_r($event_json);
+    if (checkAdminToken()) {
+        if (isset($event_json['id'])) {
+            $id = htmlspecialchars(strip_tags($event_json['id'], ENT_QUOTES));
 
-    if (isset($event_json['id'])) {
-        $id = htmlspecialchars(strip_tags($event_json['id'], ENT_QUOTES));
+            mysqli_query($conn, "Delete from sound_section where id ='" . $id . "' ");
+            mysqli_query($conn, "update sound set section='' ");
 
-        mysqli_query($conn, "Delete from sound_section where id ='" . $id . "' ");
-        mysqli_query($conn, "update sound set section='' ");
+            $array_out = array();
 
-        $array_out = array();
+            $array_out[] =
+                array(
+                    "response" => "video unlike");
 
-        $array_out[] =
-            array(
-                "response" => "video unlike");
+            $output = array("code" => "200", "msg" => $array_out);
+            print_r(json_encode($output, true));
 
-        $output = array("code" => "200", "msg" => $array_out);
-        print_r(json_encode($output, true));
+        } else {
+            $array_out = array();
+            $array_out[] =
+                array(
+                    "response" => "json parem missing"
+                );
 
+            $output = array("code" => "201", "msg" => $array_out);
+            print_r(json_encode($output, true));
+        }
     } else {
-        $array_out = array();
-        $array_out[] =
-            array(
-                "response" => "json parem missing"
-            );
-
-        $output = array("code" => "201", "msg" => $array_out);
+        $output = array("code" => "500", "msg" => "Token Expired/Invalid");
         print_r(json_encode($output, true));
     }
 }
@@ -3507,30 +4119,34 @@ function blockUser()
     $input = @file_get_contents("php://input");
     $event_json = json_decode($input, true);
     //print_r($event_json);
+    if (checkAdminToken()) {
+        if (isset($event_json['user_id'])) {
+            $user_id = htmlspecialchars(strip_tags($event_json['user_id'], ENT_QUOTES));
+            $block = htmlspecialchars(strip_tags($event_json['block'], ENT_QUOTES));
 
-    if (isset($event_json['user_id'])) {
-        $user_id = htmlspecialchars(strip_tags($event_json['user_id'], ENT_QUOTES));
-        $block = htmlspecialchars(strip_tags($event_json['block'], ENT_QUOTES));
+            mysqli_query($conn, "update users set block='" . $block . "' where fb_id ='" . $user_id . "' ");
 
-        mysqli_query($conn, "update users set block='" . $block . "' where fb_id ='" . $user_id . "' ");
+            $array_out = array();
 
-        $array_out = array();
+            $array_out[] =
+                array(
+                    "response" => "user blocked");
 
-        $array_out[] =
-            array(
-                "response" => "user blocked");
+            $output = array("code" => "200", "msg" => $array_out);
+            print_r(json_encode($output, true));
 
-        $output = array("code" => "200", "msg" => $array_out);
-        print_r(json_encode($output, true));
+        } else {
+            $array_out = array();
+            $array_out[] =
+                array(
+                    "response" => "json parem missing"
+                );
 
+            $output = array("code" => "201", "msg" => $array_out);
+            print_r(json_encode($output, true));
+        }
     } else {
-        $array_out = array();
-        $array_out[] =
-            array(
-                "response" => "json parem missing"
-            );
-
-        $output = array("code" => "201", "msg" => $array_out);
+        $output = array("code" => "500", "msg" => "Token Expired/Invalid");
         print_r(json_encode($output, true));
     }
 }
@@ -3541,25 +4157,28 @@ function getSingleSectionDetails()
     require_once("config.php");
     $input = @file_get_contents("php://input");
     $event_json = json_decode($input, true);
+    if (checkAdminToken()) {
+        //print_r($event_json);
+        $id = strip_tags($event_json['id']);
 
-    //print_r($event_json);
-    $id = strip_tags($event_json['id']);
+        $qrry_1 = "select * from sound_section where id ='" . $id . "' ";
+        $log_in_rs = mysqli_query($conn, $qrry_1);
+        $rd = mysqli_fetch_object($log_in_rs);
 
-    $qrry_1 = "select * from sound_section where id ='" . $id . "' ";
-    $log_in_rs = mysqli_query($conn, $qrry_1);
-    $rd = mysqli_fetch_object($log_in_rs);
-
-    $array_out[] =
-        array(
-            "id" => $rd->id,
-            "section_name" => $rd->section_name,
-            "created" => $rd->created
-        );
+        $array_out[] =
+            array(
+                "id" => $rd->id,
+                "section_name" => $rd->section_name,
+                "created" => $rd->created
+            );
 
 
-    $output = array("code" => "200", "msg" => $array_out);
-    print_r(json_encode($output, true));
-
+        $output = array("code" => "200", "msg" => $array_out);
+        print_r(json_encode($output, true));
+    } else {
+        $output = array("code" => "500", "msg" => "Token Expired/Invalid");
+        print_r(json_encode($output, true));
+    }
 
 }
 
@@ -3569,19 +4188,22 @@ function editSoundSection()
     require_once("config.php");
     $input = @file_get_contents("php://input");
     $event_json = json_decode($input, true);
+    if (checkAdminToken()) {
+        //print_r($event_json);
+        $id = strip_tags($event_json['id']);
+        $section_name = htmlspecialchars(strip_tags($event_json['section_name'], ENT_QUOTES));
 
-    //print_r($event_json);
-    $id = strip_tags($event_json['id']);
-    $section_name = htmlspecialchars(strip_tags($event_json['section_name'], ENT_QUOTES));
-
-    $qrry_1 = "update sound_section set section_name='" . $section_name . "'  where id ='" . $id . "' ";
-    $log_in_rs = mysqli_query($conn, $qrry_1);
-    $rd = mysqli_fetch_object($log_in_rs);
+        $qrry_1 = "update sound_section set section_name='" . $section_name . "'  where id ='" . $id . "' ";
+        $log_in_rs = mysqli_query($conn, $qrry_1);
+        $rd = mysqli_fetch_object($log_in_rs);
 
 
-    $output = array("code" => "200", "msg" => "updated");
-    print_r(json_encode($output, true));
-
+        $output = array("code" => "200", "msg" => "updated");
+        print_r(json_encode($output, true));
+    } else {
+        $output = array("code" => "500", "msg" => "Token Expired/Invalid");
+        print_r(json_encode($output, true));
+    }
 
 }
 
@@ -3590,18 +4212,22 @@ function addVideointoDiscovry()
     require_once("config.php");
     $input = @file_get_contents("php://input");
     $event_json = json_decode($input, true);
+    if (checkAdminToken()) {
+        //print_r($event_json);
+        $id = strip_tags($event_json['video_id']);
+        $section_id = htmlspecialchars(strip_tags($event_json['section_id'], ENT_QUOTES));
 
-    //print_r($event_json);
-    $id = strip_tags($event_json['video_id']);
-    $section_id = htmlspecialchars(strip_tags($event_json['section_id'], ENT_QUOTES));
-
-    $qrry_1 = "update videos set section='" . $section_id . "'  where id ='" . $id . "' ";
-    $log_in_rs = mysqli_query($conn, $qrry_1);
-    $rd = mysqli_fetch_object($log_in_rs);
+        $qrry_1 = "update videos set section='" . $section_id . "'  where id ='" . $id . "' ";
+        $log_in_rs = mysqli_query($conn, $qrry_1);
+        $rd = mysqli_fetch_object($log_in_rs);
 
 
-    $output = array("code" => "200", "msg" => "updated");
-    print_r(json_encode($output, true));
+        $output = array("code" => "200", "msg" => "updated");
+        print_r(json_encode($output, true));
+    } else {
+        $output = array("code" => "500", "msg" => "Token Expired/Invalid");
+        print_r(json_encode($output, true));
+    }
 }
 
 
@@ -3622,6 +4248,7 @@ function sendPushNotification()
     $senderid = htmlspecialchars(strip_tags($event_json['senderid'], ENT_QUOTES));
     $receiverid = htmlspecialchars(strip_tags($event_json['receiverid'], ENT_QUOTES));
     $action_type = htmlspecialchars(strip_tags($event_json['action_type'], ENT_QUOTES));
+    $videoId = htmlspecialchars(strip_tags($event_json['videoId'], ENT_QUOTES));
 
 
     $notification['to'] = $tokon;
@@ -3638,6 +4265,7 @@ function sendPushNotification()
     $notification['data']['body'] = $message;
     $notification['data']['icon'] = $icon;
     $notification['data']['senderid'] = $senderid;
+    $notification['data']['videoId'] = $videoId;
     $notification['data']['receiverid'] = $receiverid;
     $notification['data']['action_type'] = $action_type;
 
@@ -3650,9 +4278,9 @@ function getNotifications()
     $input = @file_get_contents("php://input");
     $event_json = json_decode($input, true);
 
-    $fb_id = htmlspecialchars(strip_tags($event_json['fb_id'], ENT_QUOTES));
+    $fb_id = $event_json['fb_id'];
 
-    $query = mysqli_query($conn, "select * from notification where effected_fb_id='" . $fb_id . "' ");
+    $query = mysqli_query($conn, "select * from notification where effected_fb_id='$fb_id' ORDER BY created DESC");
 
     $array_out = array();
     while ($row = mysqli_fetch_array($query)) {
@@ -3661,32 +4289,52 @@ function getNotifications()
 
         //get video data
         $query11 = mysqli_query($conn, "select * from videos where id='" . $row['value'] . "' ");
-        $rd1 = mysqli_fetch_object($query11);
+        if ($query11->num_rows > 0) {
+            $rd1 = mysqli_fetch_object($query11);
+            $array_out[] =
+                array(
+                    "fb_id" => $row['my_fb_id'],
+                    "fb_id_details" => array(
+                        "first_name" => $rd->first_name,
+                        "last_name" => $rd->last_name,
+                        "profile_pic" => $rd->profile_pic,
+                        "username" => $rd->username,
+                    ),
 
-        $array_out[] =
-            array(
-                "fb_id" => $row['my_fb_id'],
-                "fb_id_details" => array(
-                    "first_name" => $rd->first_name,
-                    "last_name" => $rd->last_name,
-                    "profile_pic" => $rd->profile_pic,
-                    "username" => $rd->username,
-                ),
+                    "effected_fb_id" => $row['effected_fb_id'],
+                    "type" => $row['type'],
+                    "value" => $row['value'],
+                    "value_data" => array(
+                        "id" => $rd1->id,
+                        "video" => checkVideoUrl($rd1->video),
+                        "thum" => checkVideoUrl($rd1->thum),
+                        "gif" => checkVideoUrl($rd1->gif)
+                    ),
+                    "created" => $row['created']
 
-                "effected_fb_id" => $row['effected_fb_id'],
-                "type" => $row['type'],
-                "value" => $row['value'],
-                "value_data" => array(
-                    "id" => $rd1->id,
-                    "video" => checkVideoUrl($rd1->video),
-                    "thum" => checkVideoUrl($rd1->thum),
-                    "gif" => checkVideoUrl($rd1->gif)
-                ),
-                "created" => $row['created']
+                );
+        } else {
+            $array_out[] =
+                array(
+                    "fb_id" => $row['my_fb_id'],
+                    "fb_id_details" => array(
+                        "first_name" => $rd->first_name,
+                        "last_name" => $rd->last_name,
+                        "profile_pic" => $rd->profile_pic,
+                        "username" => $rd->username,
+                    ),
 
-            );
+                    "effected_fb_id" => $row['effected_fb_id'],
+                    "type" => $row['type'],
+                    "value" => $row['value'],
+                    "created" => $row['created']
+
+                );
+        }
+
 
     }
+
     $output = array("code" => "200", "msg" => $array_out);
     print_r(json_encode($output, true));
 }
@@ -3822,7 +4470,13 @@ function search()
                         "device" => $row['device'],
                         "signup_type" => $row['signup_type'],
                         "created" => $row['created'],
-                        "videos" => $videoCount
+                        "videos" => $videoCount,
+                        "account_type" => $row['account_type'],
+                        "message_privacy" => $row['message_privacy'],
+                        "comment_privacy" => $row['comment_privacy'],
+                        "verified" => $row['verified'],
+                        "live_privacy" => $row['live_privacy']
+
                     );
 
             }
@@ -3873,33 +4527,37 @@ function allProfileVerification()
     $event_json = json_decode($input, true);
     //print_r($event_json);
 
+    if (checkAdminToken()) {
+        $query1 = mysqli_query($conn, "select * from verification_request ");
+        $array_out1 = array();
+        while ($row1 = mysqli_fetch_array($query1)) {
+            $query1 = mysqli_query($conn, "select * from users where fb_id='" . $row1['fb_id'] . "' ");
+            $rd = mysqli_fetch_object($query1);
 
-    $query1 = mysqli_query($conn, "select * from verification_request ");
-    $array_out1 = array();
-    while ($row1 = mysqli_fetch_array($query1)) {
-        $query1 = mysqli_query($conn, "select * from users where fb_id='" . $row1['fb_id'] . "' ");
-        $rd = mysqli_fetch_object($query1);
+            $array_out1[] =
+                array(
+                    "id" => $row1['id'],
+                    "fb_id" => $row1['fb_id'],
+                    "user_info" => array
+                    (
+                        "first_name" => $rd->first_name,
+                        "last_name" => $rd->last_name,
+                        "profile_pic" => $rd->profile_pic,
+                        "username" => "@" . $rd->username,
+                        "verified" => $rd->verified,
+                    ),
+                    "attachment" => $row1['attachment'],
+                    "created" => $row1['created']
+                );
+        }
 
-        $array_out1[] =
-            array(
-                "id" => $row1['id'],
-                "fb_id" => $row1['fb_id'],
-                "user_info" => array
-                (
-                    "first_name" => $rd->first_name,
-                    "last_name" => $rd->last_name,
-                    "profile_pic" => $rd->profile_pic,
-                    "username" => "@" . $rd->username,
-                    "verified" => $rd->verified,
-                ),
-                "attachment" => $row1['attachment'],
-                "created" => $row1['created']
-            );
+
+        $output = array("code" => "200", "msg" => $array_out1);
+        print_r(json_encode($output, true));
+    } else {
+        $output = array("code" => "500", "msg" => "Token Expired/Invalid");
+        print_r(json_encode($output, true));
     }
-
-
-    $output = array("code" => "200", "msg" => $array_out1);
-    print_r(json_encode($output, true));
 }
 
 
@@ -3910,46 +4568,49 @@ function updateVerificationStatus()
     $input = @file_get_contents("php://input");
     $event_json = json_decode($input, true);
     //print_r($event_json);
+    if (checkAdminToken()) {
+        $id = htmlspecialchars(strip_tags($event_json['id'], ENT_QUOTES));
+        $action = htmlspecialchars(strip_tags($event_json['action'], ENT_QUOTES));
 
-    $id = htmlspecialchars(strip_tags($event_json['id'], ENT_QUOTES));
-    $action = htmlspecialchars(strip_tags($event_json['action'], ENT_QUOTES));
+        if ($action == "approve") {
+            $qrry_1 = "update users SET verified ='1' WHERE fb_id ='" . $id . "' ";
+            if (mysqli_query($conn, $qrry_1)) {
+                mysqli_query($conn, "Delete from verification_request where fb_id ='" . $id . "' ");
+                $array_out = array();
 
-    if ($action == "approve") {
-        $qrry_1 = "update users SET verified ='1' WHERE fb_id ='" . $id . "' ";
-        if (mysqli_query($conn, $qrry_1)) {
-            mysqli_query($conn, "Delete from verification_request where fb_id ='" . $id . "' ");
-            $array_out = array();
+                $array_out[] =
+                    array(
+                        "response" => "success");
 
-            $array_out[] =
-                array(
-                    "response" => "success");
+                $output = array("code" => "200", "msg" => $array_out);
+                print_r(json_encode($output, true));
+            } else {
+                $array_out = array();
 
-            $output = array("code" => "200", "msg" => $array_out);
-            print_r(json_encode($output, true));
-        } else {
-            $array_out = array();
+                $array_out[] =
+                    array(
+                        "response" => "error");
 
-            $array_out[] =
-                array(
-                    "response" => "error");
+                $output = array("code" => "201", "msg" => $array_out);
+                print_r(json_encode($output, true));
+            }
+        } else
+            if ($action == "decline") {
+                mysqli_query($conn, "Delete from verification_request where fb_id ='" . $id . "' ");
 
-            $output = array("code" => "201", "msg" => $array_out);
-            print_r(json_encode($output, true));
-        }
-    } else
-        if ($action == "decline") {
-            mysqli_query($conn, "Delete from verification_request where fb_id ='" . $id . "' ");
+                $array_out = array();
 
-            $array_out = array();
+                $array_out[] =
+                    array(
+                        "response" => "request rejected and deleted");
 
-            $array_out[] =
-                array(
-                    "response" => "request rejected and deleted");
-
-            $output = array("code" => "200", "msg" => $array_out);
-            print_r(json_encode($output, true));
-        }
-
+                $output = array("code" => "200", "msg" => $array_out);
+                print_r(json_encode($output, true));
+            }
+    } else {
+        $output = array("code" => "500", "msg" => "Token Expired/Invalid");
+        print_r(json_encode($output, true));
+    }
 
 }
 
@@ -3961,10 +4622,12 @@ function getVerified()
     $event_json = json_decode($input, true);
     //print_r($event_json);
     $fb_id = htmlspecialchars(strip_tags($event_json['fb_id'], ENT_QUOTES));
+    $type = htmlspecialchars(strip_tags($event_json['type'], ENT_QUOTES));
     $attachment = htmlspecialchars(strip_tags($event_json['attachment'], ENT_QUOTES));
 
-    $qrry_1 = "insert into verification_request(fb_id,attachment)values(";
+    $qrry_1 = "insert into verification_request(fb_id,type,attachment)values(";
     $qrry_1 .= "'" . $fb_id . "',";
+    $qrry_1 .= "'" . $type . "',";
     $qrry_1 .= "'" . $attachment . "'";
     $qrry_1 .= ")";
     if (mysqli_query($conn, $qrry_1)) {
@@ -3990,241 +4653,338 @@ function getVerified()
         print_r(json_encode($output, true));
     }
 }
-function deleteUser() {
+
+function deleteUser()
+{
     require_once("config.php");
     $input = @file_get_contents("php://input");
     $event_json = json_decode($input, true);
     //print_r($event_json);
-    $id = htmlspecialchars(strip_tags($event_json['id'], ENT_QUOTES));
-    if (isset($id)) {
-        $sql="DELETE FROM users WHERE fb_id='$id'";
-        if (mysqli_query($conn,$sql)) {
-            $response["success"]=true;
+    if (checkAdminToken()) {
+        $id = htmlspecialchars(strip_tags($event_json['id'], ENT_QUOTES));
+        if (isset($id)) {
+            $sql = "DELETE FROM users WHERE fb_id='$id'";
+            if (mysqli_query($conn, $sql)) {
+                $response["success"] = true;
+            } else {
+                $response["success"] = false;
+            }
+            print_r(json_encode($response, true));
+        } else {
+            $response["success"] = false;
+            $response["message"] = "Params Missing";
+            print_r(json_encode($response, true));
         }
-        else {
-            $response["success"]=false;
-        }
-        print_r(json_encode($response, true));
-    }
-    else{
-        $response["success"]=false;
-        $response["message"]="Params Missing";
-        print_r(json_encode($response, true));
+    } else {
+        $output = array("code" => "500", "msg" => "Token Expired/Invalid");
+        print_r(json_encode($output, true));
     }
 }
-function editUser() {
+
+function editUser()
+{
     require_once("config.php");
     $input = @file_get_contents("php://input");
     $event_json = json_decode($input, true);
     //print_r($event_json);
-    $id = htmlspecialchars(strip_tags($event_json['id'], ENT_QUOTES));
-    $username = htmlspecialchars(strip_tags($event_json['username'], ENT_QUOTES));
-    $first_name = htmlspecialchars(strip_tags($event_json['first_name'], ENT_QUOTES));
-    $last_name = htmlspecialchars(strip_tags($event_json['last_name'], ENT_QUOTES));
-    $gender = htmlspecialchars(strip_tags($event_json['gender'], ENT_QUOTES));
-    $bio = htmlspecialchars(strip_tags($event_json['bio'], ENT_QUOTES));
-    $dob = htmlspecialchars(strip_tags($event_json['dob'], ENT_QUOTES));
-    $account_type = htmlspecialchars(strip_tags($event_json['account_type'], ENT_QUOTES));
-    $message_privacy = htmlspecialchars(strip_tags($event_json['message_privacy'], ENT_QUOTES));
-    $comment_privacy = htmlspecialchars(strip_tags($event_json['comment_privacy'], ENT_QUOTES));
-    $live_privacy = htmlspecialchars(strip_tags($event_json['live_privacy'], ENT_QUOTES));
-    $verified = htmlspecialchars(strip_tags($event_json['verified'], ENT_QUOTES));
-    $page_have = htmlspecialchars(strip_tags($event_json['page_have'], ENT_QUOTES));
+    if (checkAdminToken()) {
+        $id = htmlspecialchars(strip_tags($event_json['id'], ENT_QUOTES));
+        $username = htmlspecialchars(strip_tags($event_json['username'], ENT_QUOTES));
+        $first_name = htmlspecialchars(strip_tags($event_json['first_name'], ENT_QUOTES));
+        $last_name = htmlspecialchars(strip_tags($event_json['last_name'], ENT_QUOTES));
+        $gender = htmlspecialchars(strip_tags($event_json['gender'], ENT_QUOTES));
+        $bio = htmlspecialchars(strip_tags($event_json['bio'], ENT_QUOTES));
+        $dob = htmlspecialchars(strip_tags($event_json['dob'], ENT_QUOTES));
+        $account_type = htmlspecialchars(strip_tags($event_json['account_type'], ENT_QUOTES));
+        $message_privacy = htmlspecialchars(strip_tags($event_json['message_privacy'], ENT_QUOTES));
+        $comment_privacy = htmlspecialchars(strip_tags($event_json['comment_privacy'], ENT_QUOTES));
+        $live_privacy = htmlspecialchars(strip_tags($event_json['live_privacy'], ENT_QUOTES));
+        $verified = htmlspecialchars(strip_tags($event_json['verified'], ENT_QUOTES));
+        $page_have = htmlspecialchars(strip_tags($event_json['page_have'], ENT_QUOTES));
 
 
-    if (isset($id)) {
-        $sql="UPDATE users SET username='$username',first_name='$first_name',last_name='$last_name',gender='$gender',bio='$bio',dob='$dob',account_type='$account_type',message_privacy='$message_privacy',comment_privacy='$comment_privacy',live_privacy='$live_privacy',verified='$verified',page_have='$page_have' WHERE fb_id='$id'";
-        if (mysqli_query($conn,$sql)) {
-            $response["success"]=true;
+        if (isset($id)) {
+            $sql = "UPDATE users SET username='$username',first_name='$first_name',last_name='$last_name',gender='$gender',bio='$bio',dob='$dob',account_type='$account_type',message_privacy='$message_privacy',comment_privacy='$comment_privacy',live_privacy='$live_privacy',verified='$verified',page_have='$page_have' WHERE fb_id='$id'";
+            if (mysqli_query($conn, $sql)) {
+                $response["success"] = true;
+            } else {
+                $response["success"] = false;
+            }
+            print_r(json_encode($response, true));
+        } else {
+            $response["success"] = false;
+            $response["message"] = "Params Missing";
+            print_r(json_encode($response, true));
         }
-        else {
-            $response["success"]=false;
-        }
-        print_r(json_encode($response, true));
-    }
-    else{
-        $response["success"]=false;
-        $response["message"]="Params Missing";
-        print_r(json_encode($response, true));
+    } else {
+        $output = array("code" => "500", "msg" => "Token Expired/Invalid");
+        print_r(json_encode($output, true));
     }
 }
-function getCommentsByVideo() {
+
+function getCommentsByVideo()
+{
     require_once("config.php");
     $input = @file_get_contents("php://input");
     $event_json = json_decode($input, true);
     //print_r($event_json);
     $video_id = htmlspecialchars(strip_tags($event_json['video_id'], ENT_QUOTES));
+    if (checkAdminToken()) {
 
+        if (isset($video_id)) {
 
-    if (isset($video_id)) {
-
-        $sql="SELECT * FROM video_comment WHERE video_id='$video_id'";
-        $result=mysqli_query($conn,$sql);
-        if (mysqli_num_rows($result)>0) {
-            while ($row1 = mysqli_fetch_array($result)) {
-                $query1 = mysqli_query($conn, "select * from users where fb_id='" . $row1['fb_id'] . "' ");
-                $rd = mysqli_fetch_object($query1);
-                $array_out1[] =
-                    array(
-                        "comment_id" => $row1['id'],
-                        "user_id" => $row1['fb_id'],
-                        "user_info" => array
-                        (
-                            "first_name" => $rd->first_name,
-                            "last_name" => $rd->last_name,
-                            "profile_pic" => $rd->profile_pic,
-                            "username" => $rd->username,
-                            "verified" => $rd->verified,
-                        ),
-                        "comments" => $row1['comments'],
-                        "created" => $row1['created']
-                    );
+            $sql = "SELECT * FROM video_comment WHERE video_id='$video_id'";
+            $result = mysqli_query($conn, $sql);
+            if (mysqli_num_rows($result) > 0) {
+                while ($row1 = mysqli_fetch_array($result)) {
+                    $query1 = mysqli_query($conn, "select * from users where fb_id='" . $row1['fb_id'] . "' ");
+                    $rd = mysqli_fetch_object($query1);
+                    $array_out1[] =
+                        array(
+                            "comment_id" => $row1['id'],
+                            "user_id" => $row1['fb_id'],
+                            "user_info" => array
+                            (
+                                "first_name" => $rd->first_name,
+                                "last_name" => $rd->last_name,
+                                "profile_pic" => $rd->profile_pic,
+                                "username" => $rd->username,
+                                "verified" => $rd->verified,
+                            ),
+                            "comments" => $row1['comments'],
+                            "created" => $row1['created']
+                        );
+                }
+                $output = array("code" => "200", "msg" => $array_out1);
+            } else {
+                $output = array("code" => "404", "msg" => "No Comment Found");
             }
-            $output = array("code" => "200", "msg" => $array_out1);
+            print_r(json_encode($output, true));
+        } else {
+            $output = array("code" => "404", "msg" => "Params Missing");
+            print_r(json_encode($output, true));
         }
-        else {
-            $output = array("code" => "404", "msg" => "No Comment Found");
-        }
-        print_r(json_encode($output, true));
-    }
-    else{
-        $output = array("code" => "404", "msg" => "Params Missing");
+    } else {
+        $output = array("code" => "500", "msg" => "Token Expired/Invalid");
         print_r(json_encode($output, true));
     }
 }
-function deleteComment() {
+
+function deleteComment()
+{
     require_once("config.php");
     $input = @file_get_contents("php://input");
     $event_json = json_decode($input, true);
     //print_r($event_json);
-    $id = htmlspecialchars(strip_tags($event_json['comment_id'], ENT_QUOTES));
-    if (isset($id)) {
-        $sql="DELETE FROM video_comment WHERE id='$id'";
-        if (mysqli_query($conn,$sql)) {
-            $response["success"]=true;
+    if (checkAdminToken()) {
+        $id = htmlspecialchars(strip_tags($event_json['comment_id'], ENT_QUOTES));
+        if (isset($id)) {
+            $sql = "DELETE FROM video_comment WHERE id='$id'";
+            if (mysqli_query($conn, $sql)) {
+                $response["success"] = true;
+            } else {
+                $response["success"] = false;
+            }
+            print_r(json_encode($response, true));
+        } else {
+            $response["success"] = false;
+            $response["message"] = "Params Missing";
+            print_r(json_encode($response, true));
         }
-        else {
-            $response["success"]=false;
-        }
-        print_r(json_encode($response, true));
-    }
-    else{
-        $response["success"]=false;
-        $response["message"]="Params Missing";
-        print_r(json_encode($response, true));
+    } else {
+        $output = array("code" => "500", "msg" => "Token Expired/Invalid");
+        print_r(json_encode($output, true));
     }
 }
+
 function getAllPage()
 {
 
     require_once("config.php");
     $input = @file_get_contents("php://input");
     $event_json = json_decode($input, true);
-    $query = mysqli_query($conn, "SELECT * FROM pages order by id DESC");
-    $array_out = array();
-    while ($row = mysqli_fetch_array($query)) {
-        $array_out[] =
-            array(
-                "id" => $row['id'],
-                "owner_id" => $row['owner_id'],
-                "profile_pic" => $row['profile_pic'],
-                "name" => $row['name'],
-                "created" => $row['created'],
-                "description" => $row['description']
-            );
+    if (checkAdminToken()) {
+        $query = mysqli_query($conn, "SELECT * FROM pages order by id DESC");
+        $array_out = array();
+        while ($row = mysqli_fetch_array($query)) {
+            $array_out[] =
+                array(
+                    "id" => $row['id'],
+                    "owner_id" => $row['owner_id'],
+                    "profile_pic" => checkVideoUrl($row['profile_pic']),
+                    "name" => $row['name'],
+                    "created" => $row['created'],
+                    "block" => $row['block'],
+                    "description" => $row['description']
+                );
 
+        }
+        $output = array("code" => "200", "msg" => $array_out);
+        print_r(json_encode($output, true));
+    } else {
+        $output = array("code" => "500", "msg" => "Token Expired/Invalid");
+        print_r(json_encode($output, true));
     }
-    $output = array("code" => "200", "msg" => $array_out);
-    print_r(json_encode($output, true));
-
 }
-function deletePage() {
+
+function deletePage()
+{
     require_once("config.php");
     $input = @file_get_contents("php://input");
     $event_json = json_decode($input, true);
     //print_r($event_json);
-    $id = htmlspecialchars(strip_tags($event_json['id'], ENT_QUOTES));
-    if (isset($id)) {
+    if (checkAdminToken()) {
+        $id = htmlspecialchars(strip_tags($event_json['id'], ENT_QUOTES));
+        if (isset($id)) {
 
 
-        $sql_get="SELECT * FROM pages WHERE id='$id'";
-        $result_get=mysqli_query($conn,$sql_get);
-        $data=mysqli_fetch_object($result_get);
-        $sql_del="DELETE FROM pages WHERE id='$id'";
-        if (mysqli_query($conn,$sql_del)) {
-            $sql_update="UPDATE users SET page_have=0 WHERE fb_id='$data->owner_id'";
-            if (mysqli_query($conn,$sql_update)) {
-                $response["success"] = true;
+            $sql_get = "SELECT * FROM pages WHERE id='$id'";
+            $result_get = mysqli_query($conn, $sql_get);
+            $data = mysqli_fetch_object($result_get);
+            $sql_del = "DELETE FROM pages WHERE id='$id'";
+            if (mysqli_query($conn, $sql_del)) {
+                $sql_update = "UPDATE users SET page_have=0 WHERE fb_id='$data->owner_id'";
+                if (mysqli_query($conn, $sql_update)) {
+                    $response["success"] = true;
+                } else {
+                    $response["success"] = false;
+                }
+            } else {
+                $response["success"] = false;
             }
-            else {
-                $response["success"]=false;
-            }
+            print_r(json_encode($response, true));
+        } else {
+            $response["success"] = false;
+            $response["message"] = "Params Missing";
+            print_r(json_encode($response, true));
         }
-        else {
-            $response["success"]=false;
-        }
-        print_r(json_encode($response, true));
-    }
-    else{
-        $response["success"]=false;
-        $response["message"]="Params Missing";
-        print_r(json_encode($response, true));
+    } else {
+        $output = array("code" => "500", "msg" => "Token Expired/Invalid");
+        print_r(json_encode($output, true));
     }
 }
+
 function blockPage()
 {
     require_once("config.php");
     $input = @file_get_contents("php://input");
     $event_json = json_decode($input, true);
     //print_r($event_json);
+    if (checkAdminToken()) {
+        if (isset($event_json['page_id'])) {
+            $page_id = htmlspecialchars(strip_tags($event_json['page_id'], ENT_QUOTES));
+            $block = htmlspecialchars(strip_tags($event_json['block'], ENT_QUOTES));
 
-    if (isset($event_json['page_id'])) {
-        $page_id = htmlspecialchars(strip_tags($event_json['page_id'], ENT_QUOTES));
-        $block = htmlspecialchars(strip_tags($event_json['block'], ENT_QUOTES));
+            mysqli_query($conn, "update pages set block='" . $block . "' where id ='" . $page_id . "' ");
 
-        mysqli_query($conn, "update pages set block='" . $block . "' where id ='" . $page_id . "' ");
+            $array_out = array();
 
-        $array_out = array();
+            $array_out[] =
+                array(
+                    "response" => "page blocked");
 
-        $array_out[] =
-            array(
-                "response" => "page blocked");
+            $output = array("code" => "200", "msg" => $array_out);
+            print_r(json_encode($output, true));
 
-        $output = array("code" => "200", "msg" => $array_out);
-        print_r(json_encode($output, true));
+        } else {
+            $array_out = array();
+            $array_out[] =
+                array(
+                    "response" => "json parem missing"
+                );
 
+            $output = array("code" => "201", "msg" => $array_out);
+            print_r(json_encode($output, true));
+        }
     } else {
-        $array_out = array();
-        $array_out[] =
-            array(
-                "response" => "json parem missing"
-            );
-
-        $output = array("code" => "201", "msg" => $array_out);
+        $output = array("code" => "500", "msg" => "Token Expired/Invalid");
         print_r(json_encode($output, true));
     }
 }
-function turnOnOffLive() {
+
+function turnOnOffLive()
+{
     require_once("config.php");
     $input = @file_get_contents("php://input");
     $event_json = json_decode($input, true);
-    $status = htmlspecialchars(strip_tags($event_json['status'], ENT_QUOTES));
-    if (isset($status)) {
-        $sql="UPDATE live_off_on SET status='$status' WHERE id=0";
-        if (mysqli_query($conn,$sql)) {
-            $response["success"]=true;
+    if (checkAdminToken()) {
+        $status = htmlspecialchars(strip_tags($event_json['status'], ENT_QUOTES));
+        if (isset($status)) {
+            $sql = "UPDATE live_off_on SET status='$status' WHERE id=0";
+            if (mysqli_query($conn, $sql)) {
+                $response["success"] = true;
+            } else {
+                $response["success"] = false;
+            }
+            print_r(json_encode($response, true));
+        } else {
+            $response["success"] = false;
+            $response["message"] = "Params Missing";
+            print_r(json_encode($response, true));
         }
-        else {
-            $response["success"]=false;
-        }
-        print_r(json_encode($response, true));
-    }
-    else{
-        $response["success"]=false;
-        $response["message"]="Params Missing";
-        print_r(json_encode($response, true));
+    } else {
+        $output = array("code" => "500", "msg" => "Token Expired/Invalid");
+        print_r(json_encode($output, true));
     }
 }
+
+function viewReport()
+{
+    require_once("config.php");
+    $input = @file_get_contents("php://input");
+    $event_json = json_decode($input, true);
+    if (checkAdminToken()) {
+        $type = htmlspecialchars(strip_tags($event_json['type'], ENT_QUOTES));
+        if (isset($type)) {
+            $sql = "SELECT * FROM report WHERE type = '$type'";
+            $sql = "SELECT * FROM report WHERE type = '$type'";
+            $result = mysqli_query($conn, $sql);
+            if (mysqli_num_rows($result) > 0) {
+                while ($row = mysqli_fetch_array($result)) {
+                    $array_out[] = array(
+                        "id" => $row["id"],
+                        "content_id" => $row["content_id"],
+                        "reported_by" => $row["reported_by"],
+                        "created" => $row["created"],
+                        "type" => $row["type"]
+                    );
+                }
+                $output = array("code" => "200", "msg" => $array_out);
+            } else {
+                $output = array("code" => "400", "msg" => "No report found");
+            }
+
+
+        } else {
+            $output = array("code" => "401", "msg" => "Params Missing!");
+        }
+        print_r(json_encode($output, true));
+    } else {
+        $output = array("code" => "500", "msg" => "Token Expired/Invalid");
+        print_r(json_encode($output, true));
+    }
+}
+
+
+function checkAdminToken()
+{
+    try {
+        require_once("config.php");
+        $input = @file_get_contents("php://input");
+        $key = "buggee_jwt_key";
+        $headers = apache_request_headers();
+        $jwt = $headers['Token'];
+        $decoded = JWT::decode($jwt, $key, array('HS512'));
+        if ($decoded->iss == "buggeeapp") {
+            return true;
+        } else {
+            return false;
+        }
+    } catch (Exception $e) {
+        return false;
+    }
+}
+
 ////
 
 
